@@ -10,7 +10,7 @@ from .quantbook_tools import get_quantbook_instance
 def register_universe_tools(mcp: FastMCP):
     """Register universe selection and ETF constituent tools with the MCP server."""
 
-    @mcp.tool
+    @mcp.tool()
     async def get_etf_constituents(
         etf_ticker: str,
         date: str,
@@ -87,7 +87,7 @@ def register_universe_tools(mcp: FastMCP):
                 "message": f"Failed to get ETF constituents for {etf_ticker}"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def add_etf_universe_securities(
         etf_ticker: str,
         date: str,
@@ -180,7 +180,7 @@ def register_universe_tools(mcp: FastMCP):
                 "message": f"Failed to add ETF universe securities for {etf_ticker}"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def select_uncorrelated_assets(
         symbols: List[str],
         start_date: str,
@@ -327,7 +327,7 @@ def register_universe_tools(mcp: FastMCP):
                 "message": "Failed to select uncorrelated assets"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def screen_assets_by_criteria(
         symbols: List[str],
         start_date: str,

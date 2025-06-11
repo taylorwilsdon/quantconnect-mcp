@@ -10,7 +10,7 @@ _quantbook_instances: Dict[str, Any] = {}
 def register_quantbook_tools(mcp: FastMCP):
     """Register QuantBook management tools with the MCP server."""
 
-    @mcp.tool
+    @mcp.tool()
     async def initialize_quantbook(
         instance_name: str = "default",
         organization_id: Optional[str] = None,
@@ -29,7 +29,6 @@ def register_quantbook_tools(mcp: FastMCP):
         """
         try:
             # Import QuantConnect modules
-            from QuantConnect import *
             from QuantConnect.Research import QuantBook
             
             # Create new QuantBook instance
@@ -58,7 +57,7 @@ def register_quantbook_tools(mcp: FastMCP):
                 "message": f"Failed to initialize QuantBook instance '{instance_name}'"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def list_quantbook_instances() -> Dict[str, Any]:
         """
         List all active QuantBook instances.
@@ -72,7 +71,7 @@ def register_quantbook_tools(mcp: FastMCP):
             "status": "success"
         }
 
-    @mcp.tool
+    @mcp.tool()
     async def get_quantbook_info(instance_name: str = "default") -> Dict[str, Any]:
         """
         Get information about a specific QuantBook instance.
@@ -111,7 +110,7 @@ def register_quantbook_tools(mcp: FastMCP):
                 "message": f"Failed to get info for QuantBook instance '{instance_name}'"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def remove_quantbook_instance(instance_name: str) -> Dict[str, Any]:
         """
         Remove a QuantBook instance from memory.

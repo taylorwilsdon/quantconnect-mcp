@@ -29,15 +29,10 @@ mcp = FastMCP(
         "matplotlib", 
         "seaborn",
         "arch",
-        "statsmodels"
+        "statsmodels",
+        "httpx"
     ]
 )
 
-@mcp.lifespan
-async def server_lifespan():
-    print(f"🚀 Starting {mcp.name}")
-    print("📊 QuantConnect research tools available")
-    
-    yield
-    
-    print(f"🛑 Shutting down {mcp.name}")
+if __name__ == "__main__":
+    mcp.run()

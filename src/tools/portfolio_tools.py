@@ -10,7 +10,7 @@ from .quantbook_tools import get_quantbook_instance
 def register_portfolio_tools(mcp: FastMCP):
     """Register portfolio optimization and analysis tools with the MCP server."""
 
-    @mcp.tool
+    @mcp.tool()
     async def sparse_optimization(
         portfolio_symbols: List[str],
         benchmark_symbol: str,
@@ -223,7 +223,7 @@ def register_portfolio_tools(mcp: FastMCP):
                 "message": "Failed to perform sparse optimization"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def calculate_portfolio_performance(
         symbols: List[str],
         weights: List[float],
@@ -377,7 +377,7 @@ def register_portfolio_tools(mcp: FastMCP):
                 "message": "Failed to calculate portfolio performance"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def optimize_equal_weight_portfolio(
         symbols: List[str],
         start_date: str,

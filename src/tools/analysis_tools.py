@@ -10,7 +10,7 @@ from .quantbook_tools import get_quantbook_instance
 def register_analysis_tools(mcp: FastMCP):
     """Register statistical analysis tools with the MCP server."""
 
-    @mcp.tool
+    @mcp.tool()
     async def perform_pca_analysis(
         symbols: List[str],
         start_date: str,
@@ -109,7 +109,7 @@ def register_analysis_tools(mcp: FastMCP):
                 "message": "Failed to perform PCA analysis"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def test_cointegration(
         symbol1: str,
         symbol2: str,
@@ -224,7 +224,7 @@ def register_analysis_tools(mcp: FastMCP):
                 "message": f"Failed to test cointegration between {symbol1} and {symbol2}"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def analyze_mean_reversion(
         symbols: List[str],
         start_date: str,
@@ -349,7 +349,7 @@ def register_analysis_tools(mcp: FastMCP):
                 "message": "Failed to analyze mean reversion"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def calculate_correlation_matrix(
         symbols: List[str],
         start_date: str,

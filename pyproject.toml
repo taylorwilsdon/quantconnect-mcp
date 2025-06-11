@@ -5,7 +5,18 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "arch>=7.2.0",
     "fastmcp>=2.7.1",
+    "httpx>=0.28.1",
+    "matplotlib>=3.10.3",
+    "numpy>=2.3.0",
+    "pandas>=2.3.0",
+    "psutil>=7.0.0",
+    "pytest-asyncio>=1.0.0",
+    "scikit-learn>=1.7.0",
+    "scipy>=1.15.3",
+    "seaborn>=0.13.2",
+    "statsmodels>=0.14.4",
 ]
 
 [dependency-groups]
@@ -17,3 +28,7 @@ dev = [
     "pytest-asyncio>=1.0.0",
     "ruff>=0.11.13",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

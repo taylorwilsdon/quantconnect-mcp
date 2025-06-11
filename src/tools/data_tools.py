@@ -10,7 +10,7 @@ from .quantbook_tools import get_quantbook_instance
 def register_data_tools(mcp: FastMCP):
     """Register data retrieval tools with the MCP server."""
 
-    @mcp.tool
+    @mcp.tool()
     async def add_equity(
         ticker: str,
         resolution: str = "Daily",
@@ -67,7 +67,7 @@ def register_data_tools(mcp: FastMCP):
                 "message": f"Failed to add equity '{ticker}'"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def add_multiple_equities(
         tickers: List[str],
         resolution: str = "Daily", 
@@ -140,7 +140,7 @@ def register_data_tools(mcp: FastMCP):
                 "message": "Failed to add multiple equities"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def get_history(
         symbols: Union[str, List[str]],
         start_date: str,
@@ -251,7 +251,7 @@ def register_data_tools(mcp: FastMCP):
                 "message": f"Failed to retrieve history for symbols: {symbols}"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def add_alternative_data(
         data_type: str,
         symbol: str,
@@ -315,7 +315,7 @@ def register_data_tools(mcp: FastMCP):
                 "message": f"Failed to add {data_type} data for {symbol}"
             }
 
-    @mcp.tool
+    @mcp.tool()
     async def get_alternative_data_history(
         data_type: str,
         symbols: Union[str, List[str]],
