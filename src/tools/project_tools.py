@@ -4,14 +4,13 @@ from fastmcp import FastMCP
 from typing import Dict, Any, Optional
 from ..auth.quantconnect_auth import get_auth_instance
 
+
 def register_project_tools(mcp: FastMCP):
     """Register project management tools with the MCP server."""
 
     @mcp.tool()
     async def create_project(
-        name: str,
-        language: str = "Py",
-        organization_id: Optional[str] = None
+        name: str, language: str = "Py", organization_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Create a new project in your QuantConnect organization.
@@ -28,7 +27,7 @@ def register_project_tools(mcp: FastMCP):
         if auth is None:
             return {
                 "status": "error",
-                "error": "QuantConnect authentication not configured. Use configure_auth() first."
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
         # Validate language parameter
@@ -36,16 +35,13 @@ def register_project_tools(mcp: FastMCP):
         if language not in valid_languages:
             return {
                 "status": "error",
-                "error": f"Invalid language '{language}'. Must be one of: {valid_languages}"
+                "error": f"Invalid language '{language}'. Must be one of: {valid_languages}",
             }
 
         try:
             # Prepare request data
-            request_data = {
-                "name": name,
-                "language": language
-            }
-            
+            request_data = {"name": name, "language": language}
+
             # Add organization ID if provided, otherwise use the auth instance's default
             if organization_id:
                 request_data["organizationId"] = organization_id
@@ -54,15 +50,13 @@ def register_project_tools(mcp: FastMCP):
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="projects/create",
-                method="POST",
-                json=request_data
+                endpoint="projects/create", method="POST", json=request_data
             )
 
             # Parse response
             if response.status_code == 200:
                 data = response.json()
-                
+
                 if data.get("success", False):
                     # Extract project info from the response
                     projects = data.get("projects", [])
@@ -70,27 +64,30 @@ def register_project_tools(mcp: FastMCP):
                         # The newly created project should be in the list
                         created_project = None
                         for project in projects:
-                            if project.get("name") == name and project.get("language") == language:
+                            if (
+                                project.get("name") == name
+                                and project.get("language") == language
+                            ):
                                 created_project = project
                                 break
-                        
+
                         if created_project:
                             return {
                                 "status": "success",
                                 "project": created_project,
-                                "message": f"Successfully created project '{name}' with {language} language"
+                                "message": f"Successfully created project '{name}' with {language} language",
                             }
-                    
+
                     # Fallback response if project not found in list
                     return {
                         "status": "success",
                         "project": {
                             "name": name,
                             "language": language,
-                            "organizationId": request_data.get("organizationId")
+                            "organizationId": request_data.get("organizationId"),
                         },
                         "message": f"Successfully created project '{name}' with {language} language",
-                        "note": "Full project details not available in response"
+                        "note": "Full project details not available in response",
                     }
                 else:
                     # API returned success=false
@@ -99,20 +96,24 @@ def register_project_tools(mcp: FastMCP):
                         "status": "error",
                         "error": "Project creation failed",
                         "details": errors,
-                        "api_response": data
+                        "api_response": data,
                     }
-            
+
             elif response.status_code == 401:
                 return {
                     "status": "error",
-                    "error": "Authentication failed. Check your credentials and ensure they haven't expired."
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
                 }
-            
+
             else:
                 return {
                     "status": "error",
                     "error": f"API request failed with status {response.status_code}",
-                    "response_text": response.text[:500] if hasattr(response, 'text') else "No response text"
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
                 }
 
         except Exception as e:
@@ -120,13 +121,11 @@ def register_project_tools(mcp: FastMCP):
                 "status": "error",
                 "error": f"Failed to create project: {str(e)}",
                 "project_name": name,
-                "language": language
+                "language": language,
             }
 
     @mcp.tool()
-    async def read_project(
-        project_id: Optional[int] = None
-    ) -> Dict[str, Any]:
+    async def read_project(project_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Read project details by ID or list all projects if no ID provided.
 
@@ -141,7 +140,7 @@ def register_project_tools(mcp: FastMCP):
         if auth is None:
             return {
                 "status": "error",
-                "error": "QuantConnect authentication not configured. Use configure_auth() first."
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
         try:
@@ -152,19 +151,17 @@ def register_project_tools(mcp: FastMCP):
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="projects/read",
-                method="POST",
-                json=request_data
+                endpoint="projects/read", method="POST", json=request_data
             )
 
             # Parse response
             if response.status_code == 200:
                 data = response.json()
-                
+
                 if data.get("success", False):
                     projects = data.get("projects", [])
                     versions = data.get("versions", [])
-                    
+
                     # If specific project ID was requested
                     if project_id is not None:
                         if projects:
@@ -172,14 +169,14 @@ def register_project_tools(mcp: FastMCP):
                                 "status": "success",
                                 "project": projects[0],
                                 "versions": versions,
-                                "message": f"Successfully retrieved project {project_id}"
+                                "message": f"Successfully retrieved project {project_id}",
                             }
                         else:
                             return {
                                 "status": "error",
-                                "error": f"Project with ID {project_id} not found"
+                                "error": f"Project with ID {project_id} not found",
                             }
-                    
+
                     # If no project ID specified, return all projects
                     else:
                         return {
@@ -187,7 +184,7 @@ def register_project_tools(mcp: FastMCP):
                             "projects": projects,
                             "total_projects": len(projects),
                             "versions": versions,
-                            "message": f"Successfully retrieved {len(projects)} projects"
+                            "message": f"Successfully retrieved {len(projects)} projects",
                         }
                 else:
                     # API returned success=false
@@ -196,34 +193,36 @@ def register_project_tools(mcp: FastMCP):
                         "status": "error",
                         "error": "Failed to read project(s)",
                         "details": errors,
-                        "api_response": data
+                        "api_response": data,
                     }
-            
+
             elif response.status_code == 401:
                 return {
                     "status": "error",
-                    "error": "Authentication failed. Check your credentials and ensure they haven't expired."
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
                 }
-            
+
             else:
                 return {
                     "status": "error",
                     "error": f"API request failed with status {response.status_code}",
-                    "response_text": response.text[:500] if hasattr(response, 'text') else "No response text"
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
                 }
 
         except Exception as e:
             return {
                 "status": "error",
                 "error": f"Failed to read project(s): {str(e)}",
-                "project_id": project_id
+                "project_id": project_id,
             }
 
     @mcp.tool()
     async def update_project(
-        project_id: int,
-        name: Optional[str] = None,
-        description: Optional[str] = None
+        project_id: int, name: Optional[str] = None, description: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Update a project's name and/or description.
@@ -240,20 +239,20 @@ def register_project_tools(mcp: FastMCP):
         if auth is None:
             return {
                 "status": "error",
-                "error": "QuantConnect authentication not configured. Use configure_auth() first."
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
         # Validate at least one field is provided
         if name is None and description is None:
             return {
                 "status": "error",
-                "error": "At least one of 'name' or 'description' must be provided for update"
+                "error": "At least one of 'name' or 'description' must be provided for update",
             }
 
         try:
             # Prepare request data
             request_data = {"projectId": project_id}
-            
+
             if name is not None:
                 request_data["name"] = name
             if description is not None:
@@ -261,27 +260,25 @@ def register_project_tools(mcp: FastMCP):
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="projects/update",
-                method="POST",
-                json=request_data
+                endpoint="projects/update", method="POST", json=request_data
             )
 
             # Parse response
             if response.status_code == 200:
                 data = response.json()
-                
+
                 if data.get("success", False):
                     update_fields = []
                     if name is not None:
                         update_fields.append(f"name to '{name}'")
                     if description is not None:
                         update_fields.append(f"description")
-                    
+
                     return {
                         "status": "success",
                         "project_id": project_id,
                         "updated_fields": update_fields,
-                        "message": f"Successfully updated project {project_id}: {', '.join(update_fields)}"
+                        "message": f"Successfully updated project {project_id}: {', '.join(update_fields)}",
                     }
                 else:
                     # API returned success=false
@@ -290,25 +287,29 @@ def register_project_tools(mcp: FastMCP):
                         "status": "error",
                         "error": "Project update failed",
                         "details": errors,
-                        "project_id": project_id
+                        "project_id": project_id,
                     }
-            
+
             elif response.status_code == 401:
                 return {
                     "status": "error",
-                    "error": "Authentication failed. Check your credentials and ensure they haven't expired."
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
                 }
-            
+
             else:
                 return {
                     "status": "error",
                     "error": f"API request failed with status {response.status_code}",
-                    "response_text": response.text[:500] if hasattr(response, 'text') else "No response text"
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
                 }
 
         except Exception as e:
             return {
                 "status": "error",
                 "error": f"Failed to update project: {str(e)}",
-                "project_id": project_id
+                "project_id": project_id,
             }

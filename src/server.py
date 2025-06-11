@@ -22,16 +22,16 @@ mcp = FastMCP(
     log_level=os.getenv("LOG_LEVEL", "INFO"),
     on_duplicate_tools="error",
     dependencies=[
-        "pandas", 
-        "numpy", 
-        "scipy", 
-        "scikit-learn", 
-        "matplotlib", 
+        "pandas",
+        "numpy",
+        "scipy",
+        "scikit-learn",
+        "matplotlib",
         "seaborn",
         "arch",
         "statsmodels",
-        "httpx"
-    ]
+        "httpx",
+    ],
 )
 
 if __name__ == "__main__":

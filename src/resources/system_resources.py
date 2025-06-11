@@ -8,6 +8,7 @@ import psutil
 from datetime import datetime
 from typing import Dict, Any
 
+
 def register_system_resources(mcp: FastMCP):
     """Register system information resources with the MCP server."""
 
@@ -25,40 +26,39 @@ def register_system_resources(mcp: FastMCP):
             "memory": {
                 "total": psutil.virtual_memory().total,
                 "available": psutil.virtual_memory().available,
-                "percent": psutil.virtual_memory().percent
+                "percent": psutil.virtual_memory().percent,
             },
             "disk": {
-                "total": psutil.disk_usage('/').total,
-                "used": psutil.disk_usage('/').used,
-                "free": psutil.disk_usage('/').free
+                "total": psutil.disk_usage("/").total,
+                "used": psutil.disk_usage("/").used,
+                "free": psutil.disk_usage("/").free,
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     @mcp.resource("resource://quantconnect/server/status")
     async def server_status() -> Dict[str, Any]:
         """Get QuantConnect MCP server status and statistics."""
         from ..tools.quantbook_tools import _quantbook_instances
-        
+
         # Count active QuantBook instances
         active_instances = len(_quantbook_instances)
-        
+
         # Get instance details
         instance_details = {}
         for name, qb in _quantbook_instances.items():
             try:
-                securities_count = len(qb.Securities) if hasattr(qb, 'Securities') else 0
+                securities_count = (
+                    len(qb.Securities) if hasattr(qb, "Securities") else 0
+                )
                 instance_details[name] = {
                     "type": str(type(qb).__name__),
                     "securities_count": securities_count,
-                    "status": "active"
+                    "status": "active",
                 }
             except Exception as e:
-                instance_details[name] = {
-                    "status": "error",
-                    "error": str(e)
-                }
-        
+                instance_details[name] = {"status": "error", "error": str(e)}
+
         return {
             "server_name": "QuantConnect MCP Server",
             "status": "running",
@@ -66,12 +66,12 @@ def register_system_resources(mcp: FastMCP):
             "instance_details": instance_details,
             "available_tools": [
                 "QuantBook Management",
-                "Data Retrieval", 
+                "Data Retrieval",
                 "Statistical Analysis",
                 "Portfolio Optimization",
-                "Universe Selection"
+                "Universe Selection",
             ],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     @mcp.resource("resource://quantconnect/tools/summary")
@@ -82,10 +82,10 @@ def register_system_resources(mcp: FastMCP):
                 "description": "QuantBook instance management and initialization",
                 "tools": [
                     "initialize_quantbook",
-                    "list_quantbook_instances", 
+                    "list_quantbook_instances",
                     "get_quantbook_info",
-                    "remove_quantbook_instance"
-                ]
+                    "remove_quantbook_instance",
+                ],
             },
             "data_tools": {
                 "description": "Data retrieval and management",
@@ -94,8 +94,8 @@ def register_system_resources(mcp: FastMCP):
                     "add_multiple_equities",
                     "get_history",
                     "add_alternative_data",
-                    "get_alternative_data_history"
-                ]
+                    "get_alternative_data_history",
+                ],
             },
             "analysis_tools": {
                 "description": "Statistical analysis and research",
@@ -103,16 +103,16 @@ def register_system_resources(mcp: FastMCP):
                     "perform_pca_analysis",
                     "test_cointegration",
                     "analyze_mean_reversion",
-                    "calculate_correlation_matrix"
-                ]
+                    "calculate_correlation_matrix",
+                ],
             },
             "portfolio_tools": {
                 "description": "Portfolio optimization and performance analysis",
                 "tools": [
                     "sparse_optimization",
                     "calculate_portfolio_performance",
-                    "optimize_equal_weight_portfolio"
-                ]
+                    "optimize_equal_weight_portfolio",
+                ],
             },
             "universe_tools": {
                 "description": "Universe selection and asset screening",
@@ -120,11 +120,11 @@ def register_system_resources(mcp: FastMCP):
                     "get_etf_constituents",
                     "add_etf_universe_securities",
                     "select_uncorrelated_assets",
-                    "screen_assets_by_criteria"
-                ]
+                    "screen_assets_by_criteria",
+                ],
             },
             "total_tools": 19,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     @mcp.resource("resource://system/processes/{limit}")
@@ -136,14 +136,14 @@ def register_system_resources(mcp: FastMCP):
                 raise ResourceError("Limit must be between 1 and 100")
 
             processes = []
-            for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
+            for proc in psutil.process_iter(["pid", "name", "cpu_percent"]):
                 try:
                     processes.append(proc.info)
                 except psutil.NoSuchProcess:
                     pass
 
             # Sort by CPU usage and return top N
-            processes.sort(key=lambda x: x['cpu_percent'], reverse=True)
+            processes.sort(key=lambda x: x["cpu_percent"], reverse=True)
             return processes[:n]
 
         except ValueError:
@@ -157,10 +157,10 @@ def register_system_resources(mcp: FastMCP):
             "memory_usage": {
                 "percent": psutil.virtual_memory().percent,
                 "used_gb": psutil.virtual_memory().used / (1024**3),
-                "available_gb": psutil.virtual_memory().available / (1024**3)
+                "available_gb": psutil.virtual_memory().available / (1024**3),
             },
-            "load_average": os.getloadavg() if hasattr(os, 'getloadavg') else None,
+            "load_average": os.getloadavg() if hasattr(os, "getloadavg") else None,
             "active_connections": len(psutil.net_connections()),
             "uptime_seconds": datetime.now().timestamp() - psutil.boot_time(),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }

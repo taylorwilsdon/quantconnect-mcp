@@ -7,6 +7,7 @@ import json
 # Global QuantBook instance storage
 _quantbook_instances: Dict[str, Any] = {}
 
+
 def register_quantbook_tools(mcp: FastMCP):
     """Register QuantBook management tools with the MCP server."""
 
@@ -14,7 +15,7 @@ def register_quantbook_tools(mcp: FastMCP):
     async def initialize_quantbook(
         instance_name: str = "default",
         organization_id: Optional[str] = None,
-        token: Optional[str] = None
+        token: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Initialize a new QuantBook instance for research operations.
@@ -30,31 +31,31 @@ def register_quantbook_tools(mcp: FastMCP):
         try:
             # Import QuantConnect modules
             from QuantConnect.Research import QuantBook
-            
+
             # Create new QuantBook instance
             qb = QuantBook()
-            
+
             # Store the instance
             _quantbook_instances[instance_name] = qb
-            
+
             return {
                 "status": "success",
                 "instance_name": instance_name,
                 "message": f"QuantBook instance '{instance_name}' initialized successfully",
-                "available_instances": list(_quantbook_instances.keys())
+                "available_instances": list(_quantbook_instances.keys()),
             }
-            
+
         except ImportError as e:
             return {
                 "status": "error",
                 "error": f"Failed to import QuantConnect modules: {str(e)}",
-                "message": "Ensure QuantConnect LEAN is properly installed"
+                "message": "Ensure QuantConnect LEAN is properly installed",
             }
         except Exception as e:
             return {
-                "status": "error", 
+                "status": "error",
                 "error": str(e),
-                "message": f"Failed to initialize QuantBook instance '{instance_name}'"
+                "message": f"Failed to initialize QuantBook instance '{instance_name}'",
             }
 
     @mcp.tool()
@@ -68,7 +69,7 @@ def register_quantbook_tools(mcp: FastMCP):
         return {
             "instances": list(_quantbook_instances.keys()),
             "count": len(_quantbook_instances),
-            "status": "success"
+            "status": "success",
         }
 
     @mcp.tool()
@@ -86,28 +87,30 @@ def register_quantbook_tools(mcp: FastMCP):
             return {
                 "status": "error",
                 "error": f"QuantBook instance '{instance_name}' not found",
-                "available_instances": list(_quantbook_instances.keys())
+                "available_instances": list(_quantbook_instances.keys()),
             }
-        
+
         try:
             qb = _quantbook_instances[instance_name]
-            
+
             # Get basic info about the instance
-            securities_count = len(qb.Securities) if hasattr(qb, 'Securities') else 0
-            
+            securities_count = len(qb.Securities) if hasattr(qb, "Securities") else 0
+
             return {
                 "status": "success",
                 "instance_name": instance_name,
                 "securities_count": securities_count,
                 "type": str(type(qb).__name__),
-                "available_methods": [method for method in dir(qb) if not method.startswith('_')]
+                "available_methods": [
+                    method for method in dir(qb) if not method.startswith("_")
+                ],
             }
-            
+
         except Exception as e:
             return {
                 "status": "error",
                 "error": str(e),
-                "message": f"Failed to get info for QuantBook instance '{instance_name}'"
+                "message": f"Failed to get info for QuantBook instance '{instance_name}'",
             }
 
     @mcp.tool()
@@ -125,22 +128,23 @@ def register_quantbook_tools(mcp: FastMCP):
             return {
                 "status": "error",
                 "error": f"QuantBook instance '{instance_name}' not found",
-                "available_instances": list(_quantbook_instances.keys())
+                "available_instances": list(_quantbook_instances.keys()),
             }
-        
+
         try:
             del _quantbook_instances[instance_name]
             return {
                 "status": "success",
                 "message": f"QuantBook instance '{instance_name}' removed successfully",
-                "remaining_instances": list(_quantbook_instances.keys())
+                "remaining_instances": list(_quantbook_instances.keys()),
             }
         except Exception as e:
             return {
                 "status": "error",
                 "error": str(e),
-                "message": f"Failed to remove QuantBook instance '{instance_name}'"
+                "message": f"Failed to remove QuantBook instance '{instance_name}'",
             }
+
 
 def get_quantbook_instance(instance_name: str = "default"):
     """Helper function to get QuantBook instance for other tools."""

@@ -4,6 +4,7 @@ from fastmcp import FastMCP
 from typing import Dict, Any, Optional
 from ..auth.quantconnect_auth import get_auth_instance
 
+
 def register_backtest_tools(mcp: FastMCP):
     """Register backtest management tools with the MCP server."""
 
@@ -12,7 +13,7 @@ def register_backtest_tools(mcp: FastMCP):
         project_id: int,
         compile_id: str,
         backtest_name: str,
-        parameters: Optional[Dict[str, Any]] = None
+        parameters: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Create a new backtest for a compiled project.
@@ -30,7 +31,7 @@ def register_backtest_tools(mcp: FastMCP):
         if auth is None:
             return {
                 "status": "error",
-                "error": "QuantConnect authentication not configured. Use configure_auth() first."
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
         try:
@@ -38,9 +39,9 @@ def register_backtest_tools(mcp: FastMCP):
             request_data = {
                 "projectId": project_id,
                 "compileId": compile_id,
-                "backtestName": backtest_name
+                "backtestName": backtest_name,
             }
-            
+
             # Add parameters if provided
             if parameters:
                 for key, value in parameters.items():
@@ -48,19 +49,17 @@ def register_backtest_tools(mcp: FastMCP):
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="backtests/create",
-                method="POST",
-                json=request_data
+                endpoint="backtests/create", method="POST", json=request_data
             )
 
             # Parse response
             if response.status_code == 200:
                 data = response.json()
-                
+
                 if data.get("success", False):
                     backtest_results = data.get("backtest", [])
                     debugging = data.get("debugging", False)
-                    
+
                     if backtest_results:
                         backtest = backtest_results[0]
                         return {
@@ -70,17 +69,17 @@ def register_backtest_tools(mcp: FastMCP):
                             "backtest_name": backtest_name,
                             "backtest": backtest,
                             "debugging": debugging,
-                            "message": f"Successfully created backtest '{backtest_name}' for project {project_id}"
+                            "message": f"Successfully created backtest '{backtest_name}' for project {project_id}",
                         }
                     else:
                         return {
-                            "status": "success", 
+                            "status": "success",
                             "project_id": project_id,
                             "compile_id": compile_id,
                             "backtest_name": backtest_name,
                             "debugging": debugging,
                             "message": f"Backtest '{backtest_name}' created but no results yet",
-                            "note": "Backtest may still be initializing"
+                            "note": "Backtest may still be initializing",
                         }
                 else:
                     # API returned success=false
@@ -91,20 +90,24 @@ def register_backtest_tools(mcp: FastMCP):
                         "details": errors,
                         "project_id": project_id,
                         "compile_id": compile_id,
-                        "backtest_name": backtest_name
+                        "backtest_name": backtest_name,
                     }
-            
+
             elif response.status_code == 401:
                 return {
                     "status": "error",
-                    "error": "Authentication failed. Check your credentials and ensure they haven't expired."
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
                 }
-            
+
             else:
                 return {
                     "status": "error",
                     "error": f"API request failed with status {response.status_code}",
-                    "response_text": response.text[:500] if hasattr(response, 'text') else "No response text"
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
                 }
 
         except Exception as e:
@@ -113,14 +116,12 @@ def register_backtest_tools(mcp: FastMCP):
                 "error": f"Failed to create backtest: {str(e)}",
                 "project_id": project_id,
                 "compile_id": compile_id,
-                "backtest_name": backtest_name
+                "backtest_name": backtest_name,
             }
 
     @mcp.tool()
     async def read_backtest(
-        project_id: int,
-        backtest_id: str,
-        chart: Optional[str] = None
+        project_id: int, backtest_id: str, chart: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Read backtest results and statistics from a project.
@@ -137,35 +138,30 @@ def register_backtest_tools(mcp: FastMCP):
         if auth is None:
             return {
                 "status": "error",
-                "error": "QuantConnect authentication not configured. Use configure_auth() first."
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
         try:
             # Prepare request data
-            request_data = {
-                "projectId": project_id,
-                "backtestId": backtest_id
-            }
-            
+            request_data = {"projectId": project_id, "backtestId": backtest_id}
+
             # Add chart parameter if provided
             if chart is not None:
                 request_data["chart"] = chart
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="backtests/read",
-                method="POST",
-                json=request_data
+                endpoint="backtests/read", method="POST", json=request_data
             )
 
             # Parse response
             if response.status_code == 200:
                 data = response.json()
-                
+
                 if data.get("success", False):
                     backtest_results = data.get("backtest", [])
                     debugging = data.get("debugging", False)
-                    
+
                     if backtest_results:
                         backtest = backtest_results[0]
                         return {
@@ -175,12 +171,12 @@ def register_backtest_tools(mcp: FastMCP):
                             "backtest": backtest,
                             "debugging": debugging,
                             "chart_included": chart is not None,
-                            "message": f"Successfully read backtest {backtest_id} from project {project_id}"
+                            "message": f"Successfully read backtest {backtest_id} from project {project_id}",
                         }
                     else:
                         return {
                             "status": "error",
-                            "error": f"Backtest {backtest_id} not found in project {project_id}"
+                            "error": f"Backtest {backtest_id} not found in project {project_id}",
                         }
                 else:
                     # API returned success=false
@@ -190,20 +186,24 @@ def register_backtest_tools(mcp: FastMCP):
                         "error": "Failed to read backtest",
                         "details": errors,
                         "project_id": project_id,
-                        "backtest_id": backtest_id
+                        "backtest_id": backtest_id,
                     }
-            
+
             elif response.status_code == 401:
                 return {
                     "status": "error",
-                    "error": "Authentication failed. Check your credentials and ensure they haven't expired."
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
                 }
-            
+
             else:
                 return {
                     "status": "error",
                     "error": f"API request failed with status {response.status_code}",
-                    "response_text": response.text[:500] if hasattr(response, 'text') else "No response text"
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
                 }
 
         except Exception as e:
@@ -211,7 +211,7 @@ def register_backtest_tools(mcp: FastMCP):
                 "status": "error",
                 "error": f"Failed to read backtest: {str(e)}",
                 "project_id": project_id,
-                "backtest_id": backtest_id
+                "backtest_id": backtest_id,
             }
 
     @mcp.tool()
@@ -221,7 +221,7 @@ def register_backtest_tools(mcp: FastMCP):
         name: str,
         count: int = 100,
         start: Optional[int] = None,
-        end: Optional[int] = None
+        end: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Read chart data from a backtest.
@@ -241,7 +241,7 @@ def register_backtest_tools(mcp: FastMCP):
         if auth is None:
             return {
                 "status": "error",
-                "error": "QuantConnect authentication not configured. Use configure_auth() first."
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
         try:
@@ -250,9 +250,9 @@ def register_backtest_tools(mcp: FastMCP):
                 "projectId": project_id,
                 "backtestId": backtest_id,
                 "name": name,
-                "count": count
+                "count": count,
             }
-            
+
             # Add optional timestamp parameters
             if start is not None:
                 request_data["start"] = start
@@ -261,15 +261,13 @@ def register_backtest_tools(mcp: FastMCP):
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="backtests/chart/read",
-                method="POST",
-                json=request_data
+                endpoint="backtests/chart/read", method="POST", json=request_data
             )
 
             # Parse response
             if response.status_code == 200:
                 data = response.json()
-                
+
                 if data.get("success", False):
                     # Check if chart is still loading
                     if "progress" in data and "status" in data:
@@ -282,9 +280,9 @@ def register_backtest_tools(mcp: FastMCP):
                             "chart_name": name,
                             "progress": progress,
                             "chart_status": status,
-                            "message": f"Chart '{name}' is loading... ({progress * 100:.1f}% complete)"
+                            "message": f"Chart '{name}' is loading... ({progress * 100:.1f}% complete)",
                         }
-                    
+
                     # Chart is ready
                     elif "chart" in data:
                         chart = data.get("chart")
@@ -297,13 +295,13 @@ def register_backtest_tools(mcp: FastMCP):
                             "count": count,
                             "start": start,
                             "end": end,
-                            "message": f"Successfully retrieved chart '{name}' from backtest {backtest_id}"
+                            "message": f"Successfully retrieved chart '{name}' from backtest {backtest_id}",
                         }
-                    
+
                     else:
                         return {
                             "status": "error",
-                            "error": "Unexpected response format - no chart or progress data found"
+                            "error": "Unexpected response format - no chart or progress data found",
                         }
                 else:
                     # API returned success=false
@@ -314,20 +312,24 @@ def register_backtest_tools(mcp: FastMCP):
                         "details": errors,
                         "project_id": project_id,
                         "backtest_id": backtest_id,
-                        "chart_name": name
+                        "chart_name": name,
                     }
-            
+
             elif response.status_code == 401:
                 return {
                     "status": "error",
-                    "error": "Authentication failed. Check your credentials and ensure they haven't expired."
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
                 }
-            
+
             else:
                 return {
                     "status": "error",
                     "error": f"API request failed with status {response.status_code}",
-                    "response_text": response.text[:500] if hasattr(response, 'text') else "No response text"
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
                 }
 
         except Exception as e:
@@ -336,15 +338,12 @@ def register_backtest_tools(mcp: FastMCP):
                 "error": f"Failed to read backtest chart: {str(e)}",
                 "project_id": project_id,
                 "backtest_id": backtest_id,
-                "chart_name": name
+                "chart_name": name,
             }
 
     @mcp.tool()
     async def read_backtest_orders(
-        project_id: int,
-        backtest_id: str,
-        start: int = 0,
-        end: int = 100
+        project_id: int, backtest_id: str, start: int = 0, end: int = 100
     ) -> Dict[str, Any]:
         """
         Read orders from a backtest.
@@ -362,26 +361,26 @@ def register_backtest_tools(mcp: FastMCP):
         if auth is None:
             return {
                 "status": "error",
-                "error": "QuantConnect authentication not configured. Use configure_auth() first."
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
         # Validate range
         if end - start > 100:
             return {
                 "status": "error",
-                "error": "Range too large: end - start must be less than or equal to 100"
+                "error": "Range too large: end - start must be less than or equal to 100",
             }
 
         if start < 0 or end < 0:
             return {
                 "status": "error",
-                "error": "Start and end indices must be non-negative"
+                "error": "Start and end indices must be non-negative",
             }
 
         if start >= end:
             return {
                 "status": "error",
-                "error": "Start index must be less than end index"
+                "error": "Start index must be less than end index",
             }
 
         try:
@@ -390,24 +389,22 @@ def register_backtest_tools(mcp: FastMCP):
                 "projectId": project_id,
                 "backtestId": backtest_id,
                 "start": start,
-                "end": end
+                "end": end,
             }
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="backtests/orders/read",
-                method="POST",
-                json=request_data
+                endpoint="backtests/orders/read", method="POST", json=request_data
             )
 
             # Parse response
             if response.status_code == 200:
                 data = response.json()
-                
+
                 # Note: This API doesn't appear to have a "success" field based on the spec
                 orders = data.get("orders", {})
                 length = data.get("length", 0)
-                
+
                 return {
                     "status": "success",
                     "project_id": project_id,
@@ -416,20 +413,24 @@ def register_backtest_tools(mcp: FastMCP):
                     "end": end,
                     "orders": orders,
                     "length": length,
-                    "message": f"Successfully retrieved {length} orders from backtest {backtest_id} (range: {start}-{end})"
+                    "message": f"Successfully retrieved {length} orders from backtest {backtest_id} (range: {start}-{end})",
                 }
-            
+
             elif response.status_code == 401:
                 return {
                     "status": "error",
-                    "error": "Authentication failed. Check your credentials and ensure they haven't expired."
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
                 }
-            
+
             else:
                 return {
                     "status": "error",
                     "error": f"API request failed with status {response.status_code}",
-                    "response_text": response.text[:500] if hasattr(response, 'text') else "No response text"
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
                 }
 
         except Exception as e:
@@ -439,15 +440,12 @@ def register_backtest_tools(mcp: FastMCP):
                 "project_id": project_id,
                 "backtest_id": backtest_id,
                 "start": start,
-                "end": end
+                "end": end,
             }
 
     @mcp.tool()
     async def read_backtest_insights(
-        project_id: int,
-        backtest_id: str,
-        start: int = 0,
-        end: int = 100
+        project_id: int, backtest_id: str, start: int = 0, end: int = 100
     ) -> Dict[str, Any]:
         """
         Read insights from a backtest.
@@ -465,26 +463,26 @@ def register_backtest_tools(mcp: FastMCP):
         if auth is None:
             return {
                 "status": "error",
-                "error": "QuantConnect authentication not configured. Use configure_auth() first."
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
         # Validate range
         if end - start > 100:
             return {
                 "status": "error",
-                "error": "Range too large: end - start must be less than or equal to 100"
+                "error": "Range too large: end - start must be less than or equal to 100",
             }
 
         if start < 0 or end < 0:
             return {
                 "status": "error",
-                "error": "Start and end indices must be non-negative"
+                "error": "Start and end indices must be non-negative",
             }
 
         if start >= end:
             return {
                 "status": "error",
-                "error": "Start index must be less than end index"
+                "error": "Start index must be less than end index",
             }
 
         try:
@@ -493,24 +491,22 @@ def register_backtest_tools(mcp: FastMCP):
                 "projectId": project_id,
                 "backtestId": backtest_id,
                 "start": start,
-                "end": end
+                "end": end,
             }
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="backtests/read/insights",
-                method="POST",
-                json=request_data
+                endpoint="backtests/read/insights", method="POST", json=request_data
             )
 
             # Parse response
             if response.status_code == 200:
                 data = response.json()
-                
+
                 if data.get("success", False):
                     insights = data.get("insights", [])
                     length = data.get("length", 0)
-                    
+
                     return {
                         "status": "success",
                         "project_id": project_id,
@@ -519,7 +515,7 @@ def register_backtest_tools(mcp: FastMCP):
                         "end": end,
                         "insights": insights,
                         "length": length,
-                        "message": f"Successfully retrieved {length} insights from backtest {backtest_id} (range: {start}-{end})"
+                        "message": f"Successfully retrieved {length} insights from backtest {backtest_id} (range: {start}-{end})",
                     }
                 else:
                     # API returned success=false
@@ -529,20 +525,24 @@ def register_backtest_tools(mcp: FastMCP):
                         "error": "Failed to read backtest insights",
                         "details": errors,
                         "project_id": project_id,
-                        "backtest_id": backtest_id
+                        "backtest_id": backtest_id,
                     }
-            
+
             elif response.status_code == 401:
                 return {
                     "status": "error",
-                    "error": "Authentication failed. Check your credentials and ensure they haven't expired."
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
                 }
-            
+
             else:
                 return {
                     "status": "error",
                     "error": f"API request failed with status {response.status_code}",
-                    "response_text": response.text[:500] if hasattr(response, 'text') else "No response text"
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
                 }
 
         except Exception as e:
@@ -552,5 +552,5 @@ def register_backtest_tools(mcp: FastMCP):
                 "project_id": project_id,
                 "backtest_id": backtest_id,
                 "start": start,
-                "end": end
+                "end": end,
             }
