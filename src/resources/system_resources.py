@@ -39,7 +39,7 @@ def register_system_resources(mcp: FastMCP):
     @mcp.resource("resource://quantconnect/server/status")
     async def server_status() -> Dict[str, Any]:
         """Get QuantConnect MCP server status and statistics."""
-        from ..tools.quantbook_tools import _quantbook_instances
+        from ..tools.quantbook_tools import _quantbook_instances  # type: ignore
 
         # Count active QuantBook instances
         active_instances = len(_quantbook_instances)

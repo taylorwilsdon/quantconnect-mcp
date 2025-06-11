@@ -34,7 +34,7 @@ def register_data_tools(mcp: FastMCP):
             }
 
         try:
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             # Map string resolution to enum
             resolution_map = {
@@ -89,7 +89,7 @@ def register_data_tools(mcp: FastMCP):
             }
 
         try:
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             resolution_map = {
                 "Minute": Resolution.Minute,
@@ -164,7 +164,7 @@ def register_data_tools(mcp: FastMCP):
             }
 
         try:
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
             from datetime import datetime
 
             # Parse dates
@@ -269,7 +269,7 @@ def register_data_tools(mcp: FastMCP):
         try:
             # Map data types to QuantConnect classes
             if data_type == "SmartInsiderTransaction":
-                from QuantConnect.DataSource import SmartInsiderTransaction
+                from QuantConnect.DataSource import SmartInsiderTransaction  # type: ignore
 
                 # Find the symbol in securities
                 target_symbol = None
@@ -361,7 +361,7 @@ def register_data_tools(mcp: FastMCP):
                 }
 
             # Get history
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             history = qb.History(alt_symbols, start, end, Resolution.Daily)
 

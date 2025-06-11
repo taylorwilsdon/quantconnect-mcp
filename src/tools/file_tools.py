@@ -2,7 +2,7 @@
 
 from fastmcp import FastMCP
 from typing import Dict, Any, Optional
-from ..auth.quantconnect_auth import get_auth_instance
+from ..auth.quantconnect_auth import get_auth_instance  # type: ignore
 
 
 def register_file_tools(mcp: FastMCP):
@@ -106,7 +106,7 @@ def register_file_tools(mcp: FastMCP):
 
         try:
             # Prepare request data
-            request_data = {"projectId": project_id}
+            request_data: Dict[str, Any] = {"projectId": project_id}
             if name is not None:
                 request_data["name"] = name
 

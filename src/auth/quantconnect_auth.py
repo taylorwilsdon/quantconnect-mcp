@@ -52,11 +52,11 @@ class QuantConnectAuth:
         # Get hashed API token
         hashed_token = sha256(time_stamped_token).hexdigest()
         authentication = f"{self.user_id}:{hashed_token}".encode("utf-8")
-        authentication = b64encode(authentication).decode("ascii")
+        authentication_encoded = b64encode(authentication).decode("ascii")
 
         # Create headers dictionary
         return {
-            "Authorization": f"Basic {authentication}",
+            "Authorization": f"Basic {authentication_encoded}",
             "Timestamp": timestamp,
             "Content-Type": "application/json",
         }

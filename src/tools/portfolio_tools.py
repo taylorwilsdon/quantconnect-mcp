@@ -53,7 +53,7 @@ def register_portfolio_tools(mcp: FastMCP):
 
         try:
             from datetime import datetime
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             # Get all symbols including benchmark
             all_symbols = portfolio_symbols + [benchmark_symbol]
@@ -125,7 +125,7 @@ def register_portfolio_tools(mcp: FastMCP):
             c = np.array([None] * m).reshape(m, 1)
             d = np.array([None] * n).reshape(n, 1)
 
-            hdr = 10000
+            hdr = 10000.0
             iters = 1
 
             # Optimization loop
@@ -179,7 +179,7 @@ def register_portfolio_tools(mcp: FastMCP):
 
                 # Calculate mu
                 mu = float(-(np.sum(q3) + 2) / n)
-                mu_ = 0
+                mu_ = 0.0
 
                 while mu > mu_:
                     mu = mu_
@@ -283,7 +283,7 @@ def register_portfolio_tools(mcp: FastMCP):
 
         try:
             from datetime import datetime
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             if len(symbols) != len(weights):
                 return {
@@ -292,8 +292,8 @@ def register_portfolio_tools(mcp: FastMCP):
                 }
 
             # Normalize weights
-            weights = np.array(weights)
-            weights = weights / np.sum(np.abs(weights))
+            weights_array = np.array(weights)
+            weights = weights_array / np.sum(np.abs(weights_array))
 
             # Get security keys
             all_symbols = symbols + ([benchmark_symbol] if benchmark_symbol else [])
@@ -361,7 +361,7 @@ def register_portfolio_tools(mcp: FastMCP):
             results = {
                 "status": "success",
                 "symbols": symbols,
-                "weights": weights.tolist(),
+                "weights": weights.tolist() if hasattr(weights, 'tolist') else list(weights),
                 "performance_metrics": {
                     "total_return": total_return,
                     "annualized_return": annualized_return,
@@ -449,7 +449,7 @@ def register_portfolio_tools(mcp: FastMCP):
 
         try:
             from datetime import datetime
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             # Get security keys
             security_keys = []

@@ -4,7 +4,7 @@ from fastmcp import FastMCP
 import os
 from typing import Optional
 
-mcp = FastMCP(
+mcp: FastMCP = FastMCP(
     name="QuantConnect MCP Server",
     instructions="""
     This server provides comprehensive QuantConnect API functionality for:

@@ -2,7 +2,7 @@
 
 from fastmcp import FastMCP
 from typing import Dict, Any, Optional
-from ..auth.quantconnect_auth import get_auth_instance
+from ..auth.quantconnect_auth import get_auth_instance  # type: ignore
 
 
 def register_backtest_tools(mcp: FastMCP):

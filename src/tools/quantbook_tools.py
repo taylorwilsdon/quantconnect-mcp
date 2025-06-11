@@ -30,7 +30,7 @@ def register_quantbook_tools(mcp: FastMCP):
         """
         try:
             # Import QuantConnect modules
-            from QuantConnect.Research import QuantBook
+            from QuantConnect.Research import QuantBook  # type: ignore
 
             # Create new QuantBook instance
             qb = QuantBook()

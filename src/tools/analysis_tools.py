@@ -40,9 +40,9 @@ def register_analysis_tools(mcp: FastMCP):
             }
 
         try:
-            from sklearn.decomposition import PCA
+            from sklearn.decomposition import PCA  # type: ignore
             from datetime import datetime
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             # Get security keys
             security_keys = []
@@ -147,7 +147,7 @@ def register_analysis_tools(mcp: FastMCP):
             }
 
         try:
-            from arch.unitroot.cointegration import engle_granger
+            from arch.unitroot.cointegration import engle_granger  # type: ignore
             from datetime import datetime
             from QuantConnect import Resolution
 
@@ -198,7 +198,7 @@ def register_analysis_tools(mcp: FastMCP):
             spread = log_price @ coint_vector
 
             # Test stationarity of spread with ADF
-            from statsmodels.tsa.stattools import adfuller
+            from statsmodels.tsa.stattools import adfuller  # type: ignore
 
             adf_result = adfuller(spread, maxlag=0)
             adf_pvalue = adf_result[1]
@@ -257,7 +257,7 @@ def register_analysis_tools(mcp: FastMCP):
             }
 
         try:
-            from scipy.stats import zscore, norm
+            from scipy.stats import zscore, norm  # type: ignore
             from datetime import datetime
             from QuantConnect import Resolution
 
@@ -446,7 +446,7 @@ def register_analysis_tools(mcp: FastMCP):
                         )
 
             # Sort by correlation
-            correlations_list.sort(key=lambda x: abs(x["correlation"]), reverse=True)
+            correlations_list.sort(key=lambda x: abs(float(str(x["correlation"]))), reverse=True)
 
             # Get correlation summary for each asset
             asset_correlations = {}
@@ -471,7 +471,7 @@ def register_analysis_tools(mcp: FastMCP):
                 "correlation_matrix": correlation.to_dict(),
                 "highest_correlations": correlations_list[:5],
                 "lowest_correlations": sorted(
-                    correlations_list, key=lambda x: abs(x["correlation"])
+                    correlations_list, key=lambda x: abs(float(str(x["correlation"])))
                 )[:5],
                 "asset_correlation_summary": asset_correlations,
             }

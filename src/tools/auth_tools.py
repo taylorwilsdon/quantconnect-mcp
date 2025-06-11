@@ -2,12 +2,7 @@
 
 from fastmcp import FastMCP
 from typing import Dict, Any, Optional
-from ..auth import (
-    QuantConnectAuth,
-    configure_auth,
-    validate_authentication,
-    get_auth_instance,
-)
+from ..auth import QuantConnectAuth, configure_auth, validate_authentication, get_auth_instance  # type: ignore
 
 
 def register_auth_tools(mcp: FastMCP):
@@ -198,10 +193,10 @@ def register_auth_tools(mcp: FastMCP):
             Dictionary containing operation status
         """
         try:
-            global _auth_instance
-            from ..auth.quantconnect_auth import _auth_instance
+            from ..auth import quantconnect_auth  # type: ignore
 
-            _auth_instance = None
+            # Clear the auth instance
+            quantconnect_auth._auth_instance = None
 
             return {
                 "status": "success",

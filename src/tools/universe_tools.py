@@ -8,6 +8,73 @@ from datetime import datetime
 from .quantbook_tools import get_quantbook_instance
 
 
+async def _get_etf_constituents_helper(
+    etf_ticker: str, date: str, instance_name: str = "default"
+) -> Dict[str, Any]:
+    """Helper function to get ETF constituents."""
+    qb = get_quantbook_instance(instance_name)
+    if qb is None:
+        return {
+            "status": "error",
+            "error": f"QuantBook instance '{instance_name}' not found",
+        }
+
+    try:
+        from QuantConnect import Resolution  # type: ignore
+
+        # Parse date
+        universe_date = datetime.strptime(date, "%Y-%m-%d")
+        date_str = universe_date.strftime("%Y%m%d")
+
+        # Construct file path for ETF universe data
+        filename = (
+            f"/data/equity/usa/universes/etf/{etf_ticker.lower()}/{date_str}.csv"
+        )
+
+        try:
+            df = pd.read_csv(filename)
+            security_ids = df[df.columns[1]].values
+
+            # Create symbols from security IDs
+            symbols = []
+            symbol_objects = []
+            for security_id in security_ids:
+                try:
+                    symbol_obj = qb.Symbol(security_id)
+                    symbols.append(str(symbol_obj))
+                    symbol_objects.append(symbol_obj)
+                except Exception:
+                    continue
+
+            return {
+                "status": "success",
+                "etf_ticker": etf_ticker,
+                "date": date,
+                "constituents": symbols,
+                "count": len(symbols),
+                "security_ids": security_ids.tolist(),
+            }
+
+        except FileNotFoundError:
+            return {
+                "status": "error",
+                "error": f"ETF universe file not found for {etf_ticker} on {date}",
+                "message": "ETF constituent data may not be available for this date",
+            }
+        except Exception as file_error:
+            return {
+                "status": "error",
+                "error": f"Failed to read ETF universe file: {str(file_error)}",
+            }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "message": f"Failed to get ETF constituents for {etf_ticker}",
+        }
+
+
 def register_universe_tools(mcp: FastMCP):
     """Register universe selection and ETF constituent tools with the MCP server."""
 
@@ -26,67 +93,7 @@ def register_universe_tools(mcp: FastMCP):
         Returns:
             Dictionary containing ETF constituent information
         """
-        qb = get_quantbook_instance(instance_name)
-        if qb is None:
-            return {
-                "status": "error",
-                "error": f"QuantBook instance '{instance_name}' not found",
-            }
-
-        try:
-            from QuantConnect import Resolution
-
-            # Parse date
-            universe_date = datetime.strptime(date, "%Y-%m-%d")
-            date_str = universe_date.strftime("%Y%m%d")
-
-            # Construct file path for ETF universe data
-            filename = (
-                f"/data/equity/usa/universes/etf/{etf_ticker.lower()}/{date_str}.csv"
-            )
-
-            try:
-                df = pd.read_csv(filename)
-                security_ids = df[df.columns[1]].values
-
-                # Create symbols from security IDs
-                symbols = []
-                symbol_objects = []
-                for security_id in security_ids:
-                    try:
-                        symbol_obj = qb.Symbol(security_id)
-                        symbols.append(str(symbol_obj))
-                        symbol_objects.append(symbol_obj)
-                    except Exception:
-                        continue
-
-                return {
-                    "status": "success",
-                    "etf_ticker": etf_ticker,
-                    "date": date,
-                    "constituents": symbols,
-                    "count": len(symbols),
-                    "security_ids": security_ids.tolist(),
-                }
-
-            except FileNotFoundError:
-                return {
-                    "status": "error",
-                    "error": f"ETF universe file not found for {etf_ticker} on {date}",
-                    "message": "ETF constituent data may not be available for this date",
-                }
-            except Exception as e:
-                return {
-                    "status": "error",
-                    "error": f"Failed to read ETF universe file: {str(e)}",
-                }
-
-        except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "message": f"Failed to get ETF constituents for {etf_ticker}",
-            }
+        return await _get_etf_constituents_helper(etf_ticker, date, instance_name)
 
     @mcp.tool()
     async def add_etf_universe_securities(
@@ -115,10 +122,10 @@ def register_universe_tools(mcp: FastMCP):
             }
 
         try:
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             # First get the constituents
-            constituents_result = await get_etf_constituents(
+            constituents_result = await _get_etf_constituents_helper(
                 etf_ticker, date, instance_name
             )
 
@@ -216,7 +223,7 @@ def register_universe_tools(mcp: FastMCP):
             }
 
         try:
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             if method not in ["lowest_correlation", "highest_correlation"]:
                 return {
@@ -403,7 +410,7 @@ def register_universe_tools(mcp: FastMCP):
             }
 
         try:
-            from QuantConnect import Resolution
+            from QuantConnect import Resolution  # type: ignore
 
             # Include benchmark if provided
             all_symbols = symbols + ([benchmark_symbol] if benchmark_symbol else [])
@@ -479,20 +486,21 @@ def register_universe_tools(mcp: FastMCP):
             for symbol, metrics in asset_metrics.items():
                 reasons_failed = []
 
-                if min_return is not None and metrics["annualized_return"] < min_return:
+                if min_return is not None and metrics["annualized_return"] is not None and metrics["annualized_return"] < min_return:
                     reasons_failed.append(
                         f"Return {metrics['annualized_return']:.3f} < {min_return}"
                     )
 
                 if (
                     max_volatility is not None
+                    and metrics["volatility"] is not None
                     and metrics["volatility"] > max_volatility
                 ):
                     reasons_failed.append(
                         f"Volatility {metrics['volatility']:.3f} > {max_volatility}"
                     )
 
-                if min_sharpe is not None and metrics["sharpe_ratio"] < min_sharpe:
+                if min_sharpe is not None and metrics["sharpe_ratio"] is not None and metrics["sharpe_ratio"] < min_sharpe:
                     reasons_failed.append(
                         f"Sharpe {metrics['sharpe_ratio']:.3f} < {min_sharpe}"
                     )
