@@ -121,7 +121,7 @@ class TestAuthenticationAPI:
             mock_response = AsyncMock()
             mock_response.status_code = 200
             
-            mock_client.return_value.__aenter__.return_value.get.return_value = mock_response
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
             
             response = await auth.make_authenticated_request("test_endpoint", "GET")
             
