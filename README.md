@@ -7,6 +7,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Black-black.svg)](https://github.com/psf/black)
 [![Type Checked](https://img.shields.io/badge/Type%20Checked-mypy-blue.svg)](https://mypy.readthedocs.io/)
+[![smithery badge](https://smithery.ai/badge/@taylorwilsdon/quantconnect-mcp)](https://smithery.ai/server/@taylorwilsdon/quantconnect-mcp)
 
 **Professional-grade Model Context Protocol server for QuantConnect's algorithmic trading platform**
 
@@ -95,6 +96,14 @@ await perform_pca_analysis(
 ```
 
 ## 🛠️ Installation
+
+### Installing via Smithery
+
+To install quantconnect-mcp for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@taylorwilsdon/quantconnect-mcp):
+
+```bash
+npx -y @smithery/cli install @taylorwilsdon/quantconnect-mcp --client claude
+```
 
 ### Prerequisites
 
