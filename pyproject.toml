@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-quantconnect-mcp = "src.server:main"
+quantconnect-mcp = "server:main"
 
 [dependency-groups]
 dev = [

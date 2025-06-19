@@ -17,9 +17,6 @@ mcp: FastMCP = FastMCP(
 
     Use the available tools to interact with QuantConnect's research capabilities.
     """,
-    port=int(os.getenv("MCP_PORT", "8000")),
-    host=os.getenv("MCP_HOST", "127.0.0.1"),
-    log_level=os.getenv("LOG_LEVEL", "INFO"),
     on_duplicate_tools="error",
     dependencies=[
         "pandas",
