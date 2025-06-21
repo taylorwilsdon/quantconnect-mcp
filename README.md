@@ -99,7 +99,7 @@ await perform_pca_analysis(
 ### Prerequisites
 
 - **Python 3.12+** (Type-annotated for maximum reliability)
-- **QuantConnect LEAN** ([Installation Guide](https://www.quantconnect.com/docs/v2/lean-cli/installation/overview))
+- **QuantConnect LEAN** ([Installation Guide]([https://www.quantconnect.com/docs/v2/lean-cli/installation/overview](https://www.quantconnect.com/docs/v2/lean-cli/installation/installing-lean-cli)))
 - **Active QuantConnect Account** with API access
 
 ### Standard Installation
