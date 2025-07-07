@@ -29,6 +29,11 @@ class TestQuantConnectAuth:
         assert auth.organization_id == "test_org"
         assert auth.base_url == "https://www.quantconnect.com/api/v2/"
 
+    @patch.dict(
+        "os.environ",
+        {},
+        clear=True
+    )
     def test_auth_initialization_missing_credentials(self):
         """Test that initialization fails with missing credentials."""
         with pytest.raises(ValueError, match="QuantConnect credentials required"):

@@ -20,7 +20,18 @@ dependencies = [
 ]
 
 [project.scripts]
-quantconnect-mcp = "server:main"
+quantconnect-mcp = "main:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.setuptools.package-dir]
+"" = "."
 
 [dependency-groups]
 dev = [

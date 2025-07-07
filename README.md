@@ -71,11 +71,15 @@ export QUANTCONNECT_ORGANIZATION_ID="your_org_id"  # Optional
 
 ### 3. **Launch the Server**
 ```bash
-# STDIO transport (default)
+# Option 1: Enhanced entry point with verbose setup process
 python main.py
 
-# HTTP transport
+# Option 2: Clean entry point (minimal output)
+python -m src.server
+
+# To use HTTP transport (works with both entry points)
 MCP_TRANSPORT=streamable-http MCP_PORT=8000 python main.py
+MCP_TRANSPORT=streamable-http MCP_PORT=8000 python -m src.server
 ```
 
 ### 4. **Start Analyzing**
@@ -119,7 +123,7 @@ uv sync --dev
 
 ```bash
 # Check server health
-python -c "from src.server import mcp; print('✅ Installation successful')"
+python -m src.server --help
 
 # Run test suite
 pytest tests/ -v
@@ -353,7 +357,7 @@ results = await read_backtest(
 
 ```
 quantconnect-mcp/
-├── 🎛️  main.py                    # Server entry point & configuration
+├── 🎛️  main.py                    # Enhanced entry point with verbose setup
 ├── 📊  src/
 │   ├── 🖥️  server.py              # FastMCP server core
 │   ├── 🔧  tools/                 # Tool implementations
@@ -394,13 +398,16 @@ quantconnect-mcp/
 
 ```bash
 # STDIO (default) - Best for MCP clients
-python main.py
+python main.py                    # Enhanced with setup messages
+python -m src.server              # Clean minimal output
 
 # HTTP Server - Best for web integrations
 MCP_TRANSPORT=streamable-http MCP_HOST=0.0.0.0 MCP_PORT=8000 python main.py
+MCP_TRANSPORT=streamable-http MCP_HOST=0.0.0.0 MCP_PORT=8000 python -m src.server
 
 # Custom path for HTTP
 MCP_PATH=/api/v1/mcp python main.py
+MCP_PATH=/api/v1/mcp python -m src.server
 ```
 
 ### Environment Variables
@@ -462,8 +469,11 @@ from src.auth import validate_authentication
 print(asyncio.run(validate_authentication()))
 "
 
-# Test server startup
+# Test server startup (enhanced entry point)
 python main.py --help
+
+# Test server startup (clean entry point)
+python -m src.server --help
 ```
 
 ## 🤝 Contributing
