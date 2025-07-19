@@ -12,6 +12,10 @@
 
 *Seamlessly integrate QuantConnect's research environment, statistical analysis, and portfolio optimization into your AI workflows*
 
+<a href="https://glama.ai/mcp/servers/@taylorwilsdon/quantconnect-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@taylorwilsdon/quantconnect-mcp/badge" alt="QuantConnect Server MCP server" />
+</a>
+
 [◉ Quick Start](#-quick-start) •
 [◉ Documentation](#-comprehensive-api-reference) •
 [◉ Architecture](#-architecture) •
@@ -32,7 +36,7 @@ Transform your algorithmic trading research with a **production-ready MCP server
 - **▪ Enterprise Security**: SHA-256 authenticated API integration with QuantConnect
 - **⚡ High Performance**: Async-first design with concurrent data processing
 
-## ◉ Table of Contents
+## ◈ Table of Contents
 
 - [◈ Quick Start](#-quick-start)
 - [◈ Installation](#-installation)
