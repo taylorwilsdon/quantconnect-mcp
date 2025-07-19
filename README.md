@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚀 QuantConnect MCP Server
+# ◆ QuantConnect MCP Server
 
 [![Python](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://python.org)
 [![FastMCP](https://img.shields.io/badge/FastMCP-v2.7%2B-green.svg)](https://github.com/fastmcp/fastmcp)
@@ -12,40 +12,40 @@
 
 *Seamlessly integrate QuantConnect's research environment, statistical analysis, and portfolio optimization into your AI workflows*
 
-[🎯 Quick Start](#-quick-start) •
-[📖 Documentation](#-comprehensive-api-reference) •
-[🏗️ Architecture](#-architecture) •
-[🤝 Contributing](#-contributing)
+[◉ Quick Start](#-quick-start) •
+[◉ Documentation](#-comprehensive-api-reference) •
+[◉ Architecture](#-architecture) •
+[◉ Contributing](#-contributing)
 
 </div>
 
 ---
 
-## ✨ Why QuantConnect MCP Server?
+## ◈ Why QuantConnect MCP Server?
 
 Transform your algorithmic trading research with a **production-ready MCP server** that provides:
 
-- 🧪 **Research Environment**: Full QuantBook integration for interactive financial analysis
-- 📊 **Advanced Analytics**: PCA, cointegration testing, mean reversion analysis, and correlation studies  
-- 🎯 **Portfolio Optimization**: Sophisticated sparse optimization with Huber Downward Risk minimization
-- 🌐 **Universe Selection**: ETF constituent analysis and multi-criteria asset screening
-- 🔐 **Enterprise Security**: SHA-256 authenticated API integration with QuantConnect
-- ⚡ **High Performance**: Async-first design with concurrent data processing
+- **⚙ Research Environment**: Full QuantBook integration for interactive financial analysis
+- **◆ Advanced Analytics**: PCA, cointegration testing, mean reversion analysis, and correlation studies  
+- **↗ Portfolio Optimization**: Sophisticated sparse optimization with Huber Downward Risk minimization
+- **◎ Universe Selection**: ETF constituent analysis and multi-criteria asset screening
+- **▪ Enterprise Security**: SHA-256 authenticated API integration with QuantConnect
+- **⚡ High Performance**: Async-first design with concurrent data processing
 
-## 📋 Table of Contents
+## ◉ Table of Contents
 
-- [🎯 Quick Start](#-quick-start)
-- [🛠️ Installation](#️-installation)
-- [🔑 Authentication](#-authentication)
-- [🚀 Usage Examples](#-usage-examples)
-- [📖 Comprehensive API Reference](#-comprehensive-api-reference)
-- [🏗️ Architecture](#️-architecture)
-- [🔧 Advanced Configuration](#-advanced-configuration)
-- [🧪 Testing](#-testing)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
+- [◈ Quick Start](#-quick-start)
+- [◈ Installation](#-installation)
+- [◈ Authentication](#-authentication)
+- [◈ Usage Examples](#-usage-examples)
+- [◈ Comprehensive API Reference](#-comprehensive-api-reference)
+- [◈ Architecture](#-architecture)
+- [◈ Advanced Configuration](#-advanced-configuration)
+- [◈ Testing](#-testing)
+- [◈ Contributing](#-contributing)
+- [◈ License](#-license)
 
-## 🎯 Quick Start
+## ◈ Quick Start
 
 Get up and running in under 3 minutes:
 
@@ -94,12 +94,12 @@ await perform_pca_analysis(
 )
 ```
 
-## 🛠️ Installation
+## ◈ Installation
 
 ### Prerequisites
 
 - **Python 3.12+** (Type-annotated for maximum reliability)
-- **QuantConnect LEAN** ([Installation Guide]([https://www.quantconnect.com/docs/v2/lean-cli/installation/overview](https://www.quantconnect.com/docs/v2/lean-cli/installation/installing-lean-cli)))
+- **QuantConnect LEAN** ([Installation Guide](https://www.quantconnect.com/docs/v2/lean-cli/installation/installing-lean-cli))
 - **Active QuantConnect Account** with API access
 
 ### Standard Installation
@@ -119,21 +119,21 @@ uv sync --dev
 
 ```bash
 # Check server health
-python -c "from src.server import mcp; print('✅ Installation successful')"
+python -c "from src.server import mcp; print('◉ Installation successful')"
 
 # Run test suite
 pytest tests/ -v
 ```
 
-## 🔑 Authentication
+## ◈ Authentication
 
 ### Getting Your Credentials
 
 | Credential | Where to Find | Required |
 |------------|---------------|----------|
-| **User ID** | Email received when signing up | ✅ Yes |
-| **API Token** | [QuantConnect Settings](https://www.quantconnect.com/settings/) | ✅ Yes |
-| **Organization ID** | Organization URL: `/organization/{ID}` | ⚪ Optional |
+| **User ID** | Email received when signing up | ◉ Yes |
+| **API Token** | [QuantConnect Settings](https://www.quantconnect.com/settings/) | ◉ Yes |
+| **Organization ID** | Organization URL: `/organization/{ID}` | ◦ Optional |
 
 ### Configuration Methods
 
@@ -168,7 +168,7 @@ status = await get_auth_status()
 test_result = await test_quantconnect_api()
 ```
 
-## 🚀 Usage Examples
+## ◈ Usage Examples
 
 ### Financial Research Pipeline
 
@@ -223,7 +223,7 @@ cointegration_result = await test_cointegration(
 )
 
 if cointegration_result["is_cointegrated"]:
-    print(f"✅ Cointegration detected (p-value: {cointegration_result['cointegration_pvalue']:.4f})")
+    print(f"◉ Cointegration detected (p-value: {cointegration_result['cointegration_pvalue']:.4f})")
     
     # Analyze mean reversion opportunities
     mean_reversion = await analyze_mean_reversion(
@@ -265,9 +265,9 @@ results = await read_backtest(
 )
 ```
 
-## 📖 Comprehensive API Reference
+## ◈ Comprehensive API Reference
 
-### 🔐 Authentication Tools
+### ◆ Authentication Tools
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -277,7 +277,7 @@ results = await read_backtest(
 | `test_quantconnect_api` | Test API connectivity | `endpoint`, `method` |
 | `clear_quantconnect_auth` | Clear stored credentials | - |
 
-### 📊 Project Management Tools
+### ◆ Project Management Tools
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -285,7 +285,7 @@ results = await read_backtest(
 | `read_project` | Get project details or list all | `project_id` (optional) |
 | `update_project` | Update project name/description | `project_id`, `name`, `description` |
 
-### 📁 File Management Tools
+### ◆ File Management Tools
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -294,7 +294,7 @@ results = await read_backtest(
 | `update_file_content` | Update file content | `project_id`, `name`, `content` |
 | `update_file_name` | Rename file in project | `project_id`, `old_file_name`, `new_name` |
 
-### 🧪 QuantBook Research Tools
+### ◆ QuantBook Research Tools
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -303,7 +303,7 @@ results = await read_backtest(
 | `get_quantbook_info` | Get instance details | `instance_name` |
 | `remove_quantbook_instance` | Clean up instance | `instance_name` |
 
-### 📈 Data Retrieval Tools
+### ◆ Data Retrieval Tools
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -313,7 +313,7 @@ results = await read_backtest(
 | `add_alternative_data` | Subscribe to alt data | `data_type`, `symbol`, `instance_name` |
 | `get_alternative_data_history` | Get alt data history | `data_type`, `symbols`, `start_date`, `end_date` |
 
-### 🔬 Statistical Analysis Tools
+### ◆ Statistical Analysis Tools
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -322,7 +322,7 @@ results = await read_backtest(
 | `analyze_mean_reversion` | Mean reversion analysis | `symbols`, `start_date`, `end_date`, `lookback_period` |
 | `calculate_correlation_matrix` | Asset correlation analysis | `symbols`, `start_date`, `end_date` |
 
-### 💰 Portfolio Optimization Tools
+### ◆ Portfolio Optimization Tools
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -330,7 +330,7 @@ results = await read_backtest(
 | `calculate_portfolio_performance` | Performance metrics | `symbols`, `weights`, `start_date`, `end_date` |
 | `optimize_equal_weight_portfolio` | Equal-weight optimization | `symbols`, `start_date`, `end_date`, `rebalance_frequency` |
 
-### 🌐 Universe Selection Tools
+### ◆ Universe Selection Tools
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -339,7 +339,7 @@ results = await read_backtest(
 | `select_uncorrelated_assets` | Find uncorrelated assets | `symbols`, `num_assets`, `method` |
 | `screen_assets_by_criteria` | Multi-criteria screening | `symbols`, `min_return`, `max_volatility`, etc. |
 
-### 🔥 Backtest Management Tools
+### ◆ Backtest Management Tools
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -349,46 +349,46 @@ results = await read_backtest(
 | `read_backtest_orders` | Get order history | `project_id`, `backtest_id`, `start`, `end` |
 | `read_backtest_insights` | Get insights data | `project_id`, `backtest_id`, `start`, `end` |
 
-## 🏗️ Architecture
+## ◈ Architecture
 
 ```
 quantconnect-mcp/
-├── 🎛️  main.py                    # Server entry point & configuration
-├── 📊  src/
-│   ├── 🖥️  server.py              # FastMCP server core
-│   ├── 🔧  tools/                 # Tool implementations
-│   │   ├── 🔐  auth_tools.py      # Authentication management
-│   │   ├── 📁  project_tools.py   # Project CRUD operations
-│   │   ├── 📄  file_tools.py      # File management
-│   │   ├── 🧪  quantbook_tools.py # Research environment
-│   │   ├── 📈  data_tools.py      # Data retrieval
-│   │   ├── 🔬  analysis_tools.py  # Statistical analysis
-│   │   ├── 💰  portfolio_tools.py # Portfolio optimization
-│   │   ├── 🌐  universe_tools.py  # Universe selection
-│   │   └── 📊  backtest_tools.py  # Backtest management
-│   ├── 🔐  auth/                  # Authentication system
+├── ◆  main.py                    # Server entry point & configuration
+├── ◆  src/
+│   ├── ⚙  server.py              # FastMCP server core
+│   ├── ⚙  tools/                 # Tool implementations
+│   │   ├── ▪  auth_tools.py      # Authentication management
+│   │   ├── ▪  project_tools.py   # Project CRUD operations
+│   │   ├── ▪  file_tools.py      # File management
+│   │   ├── ▪  quantbook_tools.py # Research environment
+│   │   ├── ▪  data_tools.py      # Data retrieval
+│   │   ├── ▪  analysis_tools.py  # Statistical analysis
+│   │   ├── ▪  portfolio_tools.py # Portfolio optimization
+│   │   ├── ▪  universe_tools.py  # Universe selection
+│   │   └── ▪  backtest_tools.py  # Backtest management
+│   ├── ◆  auth/                  # Authentication system
 │   │   ├── __init__.py
 │   │   └── quantconnect_auth.py   # Secure API authentication
-│   └── 📊  resources/             # System resources
+│   └── ◆  resources/             # System resources
 │       ├── __init__.py
 │       └── system_resources.py   # Server monitoring
-├── 🧪  tests/                     # Comprehensive test suite
+├── ◆  tests/                     # Comprehensive test suite
 │   ├── test_auth.py
 │   ├── test_server.py
 │   └── __init__.py
-├── 📋  pyproject.toml             # Project configuration
-└── 📖  README.md                  # This file
+├── ◆  pyproject.toml             # Project configuration
+└── ◆  README.md                  # This file
 ```
 
 ### Core Design Principles
 
-- **🏛️ Modular Architecture**: Each tool category is cleanly separated for maintainability
-- **🔒 Security First**: SHA-256 authenticated API with secure credential management  
+- **◎ Modular Architecture**: Each tool category is cleanly separated for maintainability
+- **▪ Security First**: SHA-256 authenticated API with secure credential management  
 - **⚡ Async Performance**: Non-blocking operations for maximum throughput
-- **🧪 Type Safety**: Full type annotations with mypy verification
-- **🔧 Extensible**: Plugin-based architecture for easy feature additions
+- **◆ Type Safety**: Full type annotations with mypy verification
+- **⚙ Extensible**: Plugin-based architecture for easy feature additions
 
-## 🔧 Advanced Configuration
+## ◈ Advanced Configuration
 
 ### Transport Options
 
@@ -434,7 +434,7 @@ performance = await get_resource("resource://quantconnect/performance/metrics")
 top_processes = await get_resource("resource://system/processes/10")
 ```
 
-## 🧪 Testing
+## ◈ Testing
 
 ### Run the Test Suite
 
@@ -466,7 +466,7 @@ print(asyncio.run(validate_authentication()))
 python main.py --help
 ```
 
-## 🤝 Contributing
+## ◈ Contributing
 
 We welcome contributions! This project follows the highest Python development standards:
 
@@ -486,12 +486,12 @@ pre-commit install
 
 ### Code Quality Standards
 
-- ✅ **Type Hints**: All functions must have complete type annotations
-- ✅ **Documentation**: Comprehensive docstrings for all public functions
-- ✅ **Testing**: Minimum 90% test coverage required
-- ✅ **Formatting**: Black code formatting enforced
-- ✅ **Linting**: Ruff linting with zero warnings
-- ✅ **Type Checking**: mypy verification required
+- ◉ **Type Hints**: All functions must have complete type annotations
+- ◉ **Documentation**: Comprehensive docstrings for all public functions
+- ◉ **Testing**: Minimum 90% test coverage required
+- ◉ **Formatting**: Black code formatting enforced
+- ◉ **Linting**: Ruff linting with zero warnings
+- ◉ **Type Checking**: mypy verification required
 
 ### Development Workflow
 
@@ -516,13 +516,13 @@ git push origin feature/amazing-new-feature
 
 ### Pull Request Guidelines
 
-1. **📝 Clear Description**: Explain what and why, not just how
-2. **🧪 Test Coverage**: Include tests for all new functionality  
-3. **📖 Documentation**: Update README and docstrings as needed
-4. **🔍 Code Review**: Address all review feedback
-5. **✅ CI Passing**: All automated checks must pass
+1. **◆ Clear Description**: Explain what and why, not just how
+2. **◆ Test Coverage**: Include tests for all new functionality  
+3. **◆ Documentation**: Update README and docstrings as needed
+4. **◆ Code Review**: Address all review feedback
+5. **◆ CI Passing**: All automated checks must pass
 
-## 📄 License
+## ◈ License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -530,14 +530,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Built with ❤️ for the algorithmic trading community**
+**Built with precision for the algorithmic trading community**
 
 [![Python](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://python.org)
 [![FastMCP](https://img.shields.io/badge/FastMCP-v2.7%2B-green.svg)](https://github.com/fastmcp/fastmcp)
 [![QuantConnect](https://img.shields.io/badge/QuantConnect-API%20v2-orange.svg)](https://www.quantconnect.com)
 
-[⭐ Star this repo](https://github.com/your-org/quantconnect-mcp) •
-[🐛 Report issues](https://github.com/your-org/quantconnect-mcp/issues) •
-[💡 Request features](https://github.com/your-org/quantconnect-mcp/discussions)
+[◉ Star this repo](https://github.com/your-org/quantconnect-mcp) •
+[◉ Report issues](https://github.com/your-org/quantconnect-mcp/issues) •
+[◉ Request features](https://github.com/your-org/quantconnect-mcp/discussions)
 
 </div>
