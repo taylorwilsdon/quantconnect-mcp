@@ -81,8 +81,8 @@ def main():
     transport = os.getenv("MCP_TRANSPORT", "stdio")
 
     if transport == "streamable-http":
-        host = os.getenv("MCP_HOST", "127.0.0.1")
-        port = int(os.getenv("MCP_PORT", "8000"))
+        host = os.getenv("MCP_HOST", "0.0.0.0")
+        port = int(os.getenv("MCP_PORT", os.getenv("PORT", "8000")))
         print(f"🌐 Starting HTTP server on {host}:{port}")
         mcp.run(
             transport="streamable-http",
