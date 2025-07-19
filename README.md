@@ -47,19 +47,16 @@ Transform your algorithmic trading research with a **production-ready MCP server
 
 ## ◈ Quick Start
 
-Get up and running in under 3 minutes:
+Get up and running in under 2 minutes:
 
-### 1. **Install Dependencies**
+### 1. **Install with uvx (Recommended)**
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/quantconnect-mcp
-cd quantconnect-mcp
+# Install and run directly from PyPI - no cloning required!
+uvx quantconnect-mcp
 
-# Install with uv (recommended)
-uv sync
-
-# Or with pip
-pip install -e .
+# Or install with uv/pip
+uv pip install quantconnect-mcp
+pip install quantconnect-mcp
 ```
 
 ### 2. **Set Up QuantConnect Credentials**
@@ -71,11 +68,11 @@ export QUANTCONNECT_ORGANIZATION_ID="your_org_id"  # Optional
 
 ### 3. **Launch the Server**
 ```bash
-# STDIO transport (default)
-python main.py
+# STDIO transport (default) - Recommended for MCP clients
+uvx quantconnect-mcp
 
 # HTTP transport
-MCP_TRANSPORT=streamable-http MCP_PORT=8000 python main.py
+MCP_TRANSPORT=streamable-http MCP_PORT=8000 uvx quantconnect-mcp
 ```
 
 ### 4. **Start Analyzing**
@@ -99,30 +96,52 @@ await perform_pca_analysis(
 ### Prerequisites
 
 - **Python 3.12+** (Type-annotated for maximum reliability)
-- **QuantConnect LEAN** ([Installation Guide](https://www.quantconnect.com/docs/v2/lean-cli/installation/installing-lean-cli))
 - **Active QuantConnect Account** with API access
+- **uv** (recommended) or pip package manager
 
-### Standard Installation
+### Installation Methods
 
+#### Method 1: uvx (Recommended)
+```bash
+# No installation needed - run directly from PyPI
+uvx quantconnect-mcp
+
+# uvx automatically handles all dependencies and isolation
+```
+
+#### Method 2: Global Installation
 ```bash
 # Using uv (fastest)
-uv sync
+uv pip install quantconnect-mcp
 
 # Using pip
-pip install -e .
+pip install quantconnect-mcp
 
-# Development installation with testing tools
+# Then run with:
+quantconnect-mcp
+```
+
+#### Method 3: Development Installation
+```bash
+# Clone for development
+git clone https://github.com/your-org/quantconnect-mcp
+cd quantconnect-mcp
+
+# Install with development dependencies
 uv sync --dev
+
+# Run locally
+uv run quantconnect_mcp/main.py
 ```
 
 ### Verify Installation
 
 ```bash
-# Check server health
-python -c "from src.server import mcp; print('◉ Installation successful')"
+# Check if the package is working
+uvx quantconnect-mcp --help
 
-# Run test suite
-pytest tests/ -v
+# Test API connectivity (requires credentials)
+quantconnect-mcp
 ```
 
 ## ◈ Authentication
@@ -353,25 +372,26 @@ results = await read_backtest(
 
 ```
 quantconnect-mcp/
-├── ◆  main.py                    # Server entry point & configuration
-├── ◆  src/
-│   ├── ⚙  server.py              # FastMCP server core
-│   ├── ⚙  tools/                 # Tool implementations
-│   │   ├── ▪  auth_tools.py      # Authentication management
-│   │   ├── ▪  project_tools.py   # Project CRUD operations
-│   │   ├── ▪  file_tools.py      # File management
-│   │   ├── ▪  quantbook_tools.py # Research environment
-│   │   ├── ▪  data_tools.py      # Data retrieval
-│   │   ├── ▪  analysis_tools.py  # Statistical analysis
-│   │   ├── ▪  portfolio_tools.py # Portfolio optimization
-│   │   ├── ▪  universe_tools.py  # Universe selection
-│   │   └── ▪  backtest_tools.py  # Backtest management
-│   ├── ◆  auth/                  # Authentication system
-│   │   ├── __init__.py
-│   │   └── quantconnect_auth.py   # Secure API authentication
-│   └── ◆  resources/             # System resources
-│       ├── __init__.py
-│       └── system_resources.py   # Server monitoring
+├── ◆  quantconnect_mcp/          # Main package directory
+│   ├── main.py                   # Server entry point & configuration
+│   └── src/                      # Source code modules
+│       ├── ⚙  server.py          # FastMCP server core
+│       ├── ⚙  tools/             # Tool implementations
+│       │   ├── ▪  auth_tools.py      # Authentication management
+│       │   ├── ▪  project_tools.py   # Project CRUD operations
+│       │   ├── ▪  file_tools.py      # File management
+│       │   ├── ▪  quantbook_tools.py # Research environment
+│       │   ├── ▪  data_tools.py      # Data retrieval
+│       │   ├── ▪  analysis_tools.py  # Statistical analysis
+│       │   ├── ▪  portfolio_tools.py # Portfolio optimization
+│       │   ├── ▪  universe_tools.py  # Universe selection
+│       │   └── ▪  backtest_tools.py  # Backtest management
+│       ├── ◆  auth/              # Authentication system
+│       │   ├── __init__.py
+│       │   └── quantconnect_auth.py   # Secure API authentication
+│       └── ◆  resources/         # System resources
+│           ├── __init__.py
+│           └── system_resources.py   # Server monitoring
 ├── ◆  tests/                     # Comprehensive test suite
 │   ├── test_auth.py
 │   ├── test_server.py
@@ -394,13 +414,16 @@ quantconnect-mcp/
 
 ```bash
 # STDIO (default) - Best for MCP clients
-python main.py
+uvx quantconnect-mcp
 
 # HTTP Server - Best for web integrations
-MCP_TRANSPORT=streamable-http MCP_HOST=0.0.0.0 MCP_PORT=8000 python main.py
+MCP_TRANSPORT=streamable-http MCP_HOST=0.0.0.0 MCP_PORT=8000 uvx quantconnect-mcp
 
 # Custom path for HTTP
-MCP_PATH=/api/v1/mcp python main.py
+MCP_PATH=/api/v1/mcp uvx quantconnect-mcp
+
+# Development mode with local changes
+uv run quantconnect_mcp/main.py
 ```
 
 ### Environment Variables
@@ -463,7 +486,7 @@ print(asyncio.run(validate_authentication()))
 "
 
 # Test server startup
-python main.py --help
+uvx quantconnect-mcp --help
 ```
 
 ## ◈ Contributing
