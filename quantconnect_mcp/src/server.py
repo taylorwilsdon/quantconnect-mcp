@@ -1,15 +1,10 @@
-#!/usr/bin/env python3
-"""QuantConnect MCP Server Entry Point"""
+"""QuantConnect MCP Server Core Configuration"""
 
 import os
-import sys
-from pathlib import Path
+from typing import Optional
+from fastmcp import FastMCP
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from src.server import mcp
-from src.tools import (
+from .tools import (
     register_quantbook_tools,
     register_data_tools,
     register_analysis_tools,
@@ -20,9 +15,36 @@ from src.tools import (
     register_file_tools,
     register_backtest_tools,
 )
-from src.resources import register_system_resources
-from src.auth import configure_auth
+from .resources import register_system_resources
+from .auth import configure_auth
 
+
+mcp: FastMCP = FastMCP(
+    name="QuantConnect MCP Server",
+    instructions="""
+    This server provides comprehensive QuantConnect API functionality for:
+    - Research environment operations with QuantBook
+    - Historical data retrieval and analysis
+    - Statistical analysis (PCA, cointegration, mean reversion)
+    - Portfolio optimization and risk analysis
+    - Universe selection and asset filtering
+    - Alternative data integration
+
+    Use the available tools to interact with QuantConnect's research capabilities.
+    """,
+    on_duplicate_tools="error",
+    dependencies=[
+        "pandas",
+        "numpy",
+        "scipy",
+        "scikit-learn",
+        "matplotlib",
+        "seaborn",
+        "arch",
+        "statsmodels",
+        "httpx",
+    ],
+)
 
 def main():
     """Initialize and run the QuantConnect MCP server."""

@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "quantconnect-mcp"
 version = "0.1.5"
@@ -20,7 +24,7 @@ dependencies = [
 ]
 
 [project.scripts]
-quantconnect-mcp = "server:main"
+quantconnect-mcp = "quantconnect_mcp.main:main"
 
 [dependency-groups]
 dev = [
@@ -31,6 +35,10 @@ dev = [
     "pytest-asyncio>=1.0.0",
     "ruff>=0.11.13",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["quantconnect_mcp*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
