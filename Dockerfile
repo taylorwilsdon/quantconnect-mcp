@@ -36,7 +36,7 @@ COPY quantconnect_mcp/ ./quantconnect_mcp/
 
 
 # Change ownership to app user
-RUN chown -Rv app:app /app
+RUN chown -R app:app /app
 
 # Switch to non-root user
 USER app
