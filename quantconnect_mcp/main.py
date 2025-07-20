@@ -5,39 +5,25 @@ import os
 import sys
 from pathlib import Path
 
-# Handle both installed package and local execution
-try:
-    from .src.server import mcp
-    from .src.tools import (
-        register_quantbook_tools,
-        register_data_tools,
-        register_analysis_tools,
-        register_portfolio_tools,
-        register_universe_tools,
-        register_auth_tools,
-        register_project_tools,
-        register_file_tools,
-        register_backtest_tools,
-    )
-    from .src.resources import register_system_resources
-    from .src.auth import configure_auth
-except ImportError:
-    # Fallback for local execution
-    sys.path.insert(0, str(Path(__file__).parent))
-    from src.server import mcp
-    from src.tools import (
-        register_quantbook_tools,
-        register_data_tools,
-        register_analysis_tools,
-        register_portfolio_tools,
-        register_universe_tools,
-        register_auth_tools,
-        register_project_tools,
-        register_file_tools,
-        register_backtest_tools,
-    )
-    from src.resources import register_system_resources
-    from src.auth import configure_auth
+# Ensure package root is in Python path for consistent imports
+package_root = Path(__file__).parent.parent
+if str(package_root) not in sys.path:
+    sys.path.insert(0, str(package_root))
+
+from quantconnect_mcp.src.server import mcp
+from quantconnect_mcp.src.tools import (
+    register_quantbook_tools,
+    register_data_tools,
+    register_analysis_tools,
+    register_portfolio_tools,
+    register_universe_tools,
+    register_auth_tools,
+    register_project_tools,
+    register_file_tools,
+    register_backtest_tools,
+)
+from quantconnect_mcp.src.resources import register_system_resources
+from quantconnect_mcp.src.auth import configure_auth
 
 
 def main():

@@ -8,9 +8,9 @@
 [![Code Style](https://img.shields.io/badge/Code%20Style-Black-black.svg)](https://github.com/psf/black)
 [![Type Checked](https://img.shields.io/badge/Type%20Checked-mypy-blue.svg)](https://mypy.readthedocs.io/)
 
-**Professional-grade Model Context Protocol server for QuantConnect's algorithmic trading platform**
+**Production-ready Model Context Protocol server for QuantConnect's algorithmic trading platform**
 
-*Seamlessly integrate QuantConnect's research environment, statistical analysis, and portfolio optimization into your AI workflows*
+*Integrate QuantConnect's research environment, statistical analysis, and portfolio optimization into your AI workflows. Locally hosted, secure & capable of dramatically improving productivity*
 
 [◉ Quick Start](#-quick-start) •
 [◉ Documentation](#-comprehensive-api-reference) •
@@ -19,7 +19,7 @@
 
 </div>
 
-
+> Demo - Roo Code
 <div align="center">
 <video width="832" src="https://github.com/user-attachments/assets/4d0e8074-aa27-4041-befc-b4119b5eaec6"></video>
 </div>
@@ -32,18 +32,18 @@
 Transform your algorithmic trading research with a **production-ready MCP server** that provides:
 
 - **⚙ Research Environment**: Full QuantBook integration for interactive financial analysis
-- **◆ Advanced Analytics**: PCA, cointegration testing, mean reversion analysis, and correlation studies  
+- **◆ Advanced Analytics**: PCA, cointegration testing, mean reversion analysis, and correlation studies
 - **↗ Portfolio Optimization**: Sophisticated sparse optimization with Huber Downward Risk minimization
 - **◎ Universe Selection**: ETF constituent analysis and multi-criteria asset screening
 - **▪ Enterprise Security**: SHA-256 authenticated API integration with QuantConnect
 - **⚡ High Performance**: Async-first design with concurrent data processing
+- **◆ AI-Native**: Designed for interaction via natural language in AI clients
 
 ## ◉ Table of Contents
 
 - [◈ Quick Start](#-quick-start)
-- [◈ Installation](#-installation)
 - [◈ Authentication](#-authentication)
-- [◈ Usage Examples](#-usage-examples)
+- [◈ Natural Language Examples](#-natural-language-examples)
 - [◈ Comprehensive API Reference](#-comprehensive-api-reference)
 - [◈ Architecture](#-architecture)
 - [◈ Advanced Configuration](#-advanced-configuration)
@@ -55,7 +55,9 @@ Transform your algorithmic trading research with a **production-ready MCP server
 
 Get up and running in under 2 minutes:
 
-### 1. **Install with uvx (Recommended)**
+> **Prerequisites:** You must have QuantConnect credentials (User ID and API Token) before running the server. The server will not function without proper authentication. See [Authentication](#-authentication) section for details on obtaining these credentials.
+
+### **Install with uvx (Recommended)**
 ```bash
 # Install and run directly from PyPI - no cloning required!
 uvx quantconnect-mcp
@@ -65,11 +67,24 @@ uv pip install quantconnect-mcp
 pip install quantconnect-mcp
 ```
 
-### 2. **Set Up QuantConnect Credentials**
+
+### One-Click Claude Desktop Install (Recommended)
+
+1. **Download:** Grab the latest `quantconnect-mcp.dxt` from the “Releases” page
+2. **Install:** Double-click the file – Claude Desktop opens and prompts you to **Install**
+3. **Configure:** In Claude Desktop → **Settings → Extensions → QuantConnect MCP**, paste your user ID and API token
+4. **Use it:** Start a new Claude chat and call any QuantConnect tool
+
+
+**Why DXT?**
+> Desktop Extensions (`.dxt`) bundle the server, dependencies, and manifest so users go from download → working MCP in **one click** – no terminal, no JSON editing, no version conflicts.
+
+### 2. **Set Up QuantConnect Credentials (Required)**
+**The server requires these environment variables to function properly:**
 ```bash
-export QUANTCONNECT_USER_ID="your_user_id"
-export QUANTCONNECT_API_TOKEN="your_api_token"
-export QUANTCONNECT_ORGANIZATION_ID="your_org_id"  # Optional
+export QUANTCONNECT_USER_ID="your_user_id"        # Required
+export QUANTCONNECT_API_TOKEN="your_api_token"    # Required
+export QUANTCONNECT_ORGANIZATION_ID="your_org_id" # Optional
 ```
 
 ### 3. **Launch the Server**
@@ -81,74 +96,12 @@ uvx quantconnect-mcp
 MCP_TRANSPORT=streamable-http MCP_PORT=8000 uvx quantconnect-mcp
 ```
 
-### 4. **Start Analyzing**
-```python
-# Initialize research environment
-await initialize_quantbook(instance_name="research")
+### 4. **Interact with Natural Language**
 
-# Add securities for analysis
-await add_multiple_equities(["AAPL", "MSFT", "GOOGL", "AMZN"], resolution="Daily")
+Instead of calling tools programmatically, you use natural language with a connected AI client (like Claude, a GPT, or any other MCP-compatible interface).
 
-# Perform sophisticated analysis
-await perform_pca_analysis(
-    symbols=["AAPL", "MSFT", "GOOGL", "AMZN"],
-    start_date="2023-01-01",
-    end_date="2024-01-01"
-)
-```
+> "Initialize a research environment, add GOOGL, AMZN, and MSFT, then run a PCA analysis on them for 2023."
 
-## ◈ Installation
-
-### Prerequisites
-
-- **Python 3.12+** (Type-annotated for maximum reliability)
-- **Active QuantConnect Account** with API access
-- **uv** (recommended) or pip package manager
-
-### Installation Methods
-
-#### Method 1: uvx (Recommended)
-```bash
-# No installation needed - run directly from PyPI
-uvx quantconnect-mcp
-
-# uvx automatically handles all dependencies and isolation
-```
-
-#### Method 2: Global Installation
-```bash
-# Using uv (fastest)
-uv pip install quantconnect-mcp
-
-# Using pip
-pip install quantconnect-mcp
-
-# Then run with:
-quantconnect-mcp
-```
-
-#### Method 3: Development Installation
-```bash
-# Clone for development
-git clone https://github.com/your-org/quantconnect-mcp
-cd quantconnect-mcp
-
-# Install with development dependencies
-uv sync --dev
-
-# Run locally
-uv run quantconnect_mcp/main.py
-```
-
-### Verify Installation
-
-```bash
-# Check if the package is working
-uvx quantconnect-mcp --help
-
-# Test API connectivity (requires credentials)
-quantconnect-mcp
-```
 
 ## ◈ Authentication
 
@@ -170,125 +123,67 @@ export QUANTCONNECT_API_TOKEN="your_secure_token_here"
 export QUANTCONNECT_ORGANIZATION_ID="your_org_id"  # Optional
 ```
 
-#### Method 2: Runtime Configuration
-```python
-# Configure programmatically
-await configure_quantconnect_auth(
-    user_id="123456",
-    api_token="your_secure_token_here",
-    organization_id="your_org_id"  # Optional
-)
 
-# Validate configuration
-result = await validate_quantconnect_auth()
-print(f"Auth Status: {result['authenticated']}")
-```
+## ◈ Natural Language Examples
 
-#### Method 3: Interactive Setup
-```python
-# Check current status
-status = await get_auth_status()
+This MCP server is designed to be used with natural language. Below are examples of how you can instruct an AI assistant to perform complex financial analysis tasks.
 
-# Test API connectivity
-test_result = await test_quantconnect_api()
-```
+### Factor‑Driven Portfolio Construction Pipeline
 
-## ◈ Usage Examples
+> **“Build a global equity long/short portfolio for 2025:**
+> 1. Pull the **constituents of QQQ, SPY, and EEM** as of **2024‑12‑31** (survivor‑bias free).
+> 2. For each symbol, calculate **Fama‑French 5‑factor** and **quality‑minus‑junk** loadings using daily data **2022‑01‑01 → 2024‑12‑31**.
+> 3. Rank stocks into terciles on **value (B/M)** and **momentum (12‑1)**; go long top tercile, short bottom, beta‑neutral to the S&P 500.
+> 4. Within each book, apply **Hierarchical Risk Parity (HRP)** for position sizing, capped at **5 % gross exposure per leg**.
+> 5. Target **annualised ex‑ante volatility ≤ 10 %**; solve with **CVaR minimisation** under a 95 % confidence level.
+> 6. Benchmark against **MSCI World**; report **annualised return, vol, Sharpe, Sortino, max DD, hit‑rate, turnover** for the period **2023‑01‑01 → 2024‑12‑31**.
+> 7. Export the optimal weights and full tear‑sheet as `pdf` + `csv`.
+> 8. Schedule a monthly rebalance job and push signals to the live trading endpoint.”
 
-### Financial Research Pipeline
+---
 
-```python
-# 1. Initialize research environment
-await initialize_quantbook(instance_name="research_2024")
+### Robust Statistical‑Arbitrage Workflow
 
-# 2. Build universe from ETF constituents
-await add_etf_universe_securities(
-    etf_ticker="QQQ",
-    date="2024-01-01",
-    resolution="Daily"
-)
+> **“Test and refine a pairs‑trading idea:**
+> • Universe: **US Staples sector, market cap > $5 B, price > $10**.
+> • Data: **15‑minute bars, 2023‑01‑02 → 2025‑06‑30**.
+> • Step 1 – For all pairs, calculate **rolling 60‑day distance correlation**; keep pairs with dCor ≥ 0.80.
+> • Step 2 – Run **Johansen cointegration** (lag = 2) on the survivors; retain pairs with trace‑stat < 5 % critical value.
+> • Step 3 – For each cointegrated pair:
+>    – Estimate **half‑life of mean‑reversion**; discard if > 7 days.
+>    – Compute **Hurst exponent**; require H < 0.4.
+> • Step 4 – Simulate a **Bayesian Kalman‑filter spread** to allow time‑varying hedge ratios.
+> • Entry: z‑score crosses ±2 (two‑bar confirmation); Exit: z = 0 or t_max = 3 × half‑life.
+> • Risk: cap **pair notional at 3 % NAV**, portfolio **gross leverage ≤ 3 ×**, stop‑loss at z = 4.
+> • Output: trade log, PnL attribution, **bootstrapped p‑value of alpha**, and **Likelihood‑Ratio test** for regime shifts.”
 
-# 3. Perform correlation analysis
-correlation_matrix = await calculate_correlation_matrix(
-    symbols=["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"],
-    start_date="2023-01-01",
-    end_date="2024-01-01"
-)
 
-# 4. Find uncorrelated assets for diversification
-uncorrelated = await select_uncorrelated_assets(
-    symbols=correlation_matrix["symbols"],
-    num_assets=5,
-    method="lowest_correlation",
-    start_date="2023-01-01",
-    end_date="2024-01-01"
-)
+### Automated Project, Backtest & Hyper‑Parameter Sweep
 
-# 5. Optimize portfolio with advanced algorithm
-optimized_portfolio = await sparse_optimization(
-    portfolio_symbols=uncorrelated["selected_assets"]["symbols"],
-    benchmark_symbol="SPY",
-    start_date="2023-01-01",
-    end_date="2024-01-01",
-    max_weight=0.15,
-    lambda_param=0.01
-)
-```
+> **“Spin up an experiment suite in QuantConnect:**
+> 1. Create project **‘DynamicPairs_Kalman’** (Python).
+> 2. Add files:
+>    • `alpha.py` – signal generation (placeholder)
+>    • `risk.py` – custom position sizing
+>    • `config.yaml` – parameter grid:
+>        ```yaml
+>        entry_z:  [1.5, 2.0, 2.5]
+>        lookback: [30, 60, 90]
+>        hedge:    ['OLS', 'Kalman']
+>        ```
+> 3. Trigger a **parameter‑sweep backtest** labelled **‘GridSearch‑v1’** using **in‑sample 2022‑23**.
+> 4. When jobs finish, rank runs by **Information Ratio** and **max DD < 10 %**; persist **top‑3 configs**.
+> 5. Automatically launch **out‑of‑sample backtests 2024‑YTD** for the winners.
+> 6. Produce an executive summary: tables + charts (equity curve, rolling Sharpe, exposure histogram).
+> 7. Package the best model as a **Docker image**, push to registry, and deploy to the **live‑trading cluster** with a kill‑switch if **1‑day loss > 3 σ**.”
 
 ### Statistical Analysis Workflow
 
-```python
-# Cointegration analysis for pairs trading
-cointegration_result = await test_cointegration(
-    symbol1="KO",
-    symbol2="PEP",
-    start_date="2023-01-01",
-    end_date="2024-01-01",
-    trend="c"
-)
-
-if cointegration_result["is_cointegrated"]:
-    print(f"◉ Cointegration detected (p-value: {cointegration_result['cointegration_pvalue']:.4f})")
-    
-    # Analyze mean reversion opportunities
-    mean_reversion = await analyze_mean_reversion(
-        symbols=["KO", "PEP"],
-        start_date="2023-01-01",
-        end_date="2024-01-01",
-        lookback_period=20
-    )
-```
+> "Are Coca-Cola (KO) and Pepsi (PEP) cointegrated? Run the test for the period from 2023 to 2024. If they are, analyze their mean-reversion properties with a 20-day lookback."
 
 ### Project and Backtest Management
 
-```python
-# Create new algorithmic trading project
-project = await create_project(
-    name="Mean_Reversion_Strategy_v2",
-    language="Py"
-)
-
-# Upload algorithm code
-await create_file(
-    project_id=project["project"]["projectId"],
-    name="main.py",
-    content=algorithm_code
-)
-
-# Run backtest
-backtest = await create_backtest(
-    project_id=project["project"]["projectId"],
-    compile_id="latest",
-    backtest_name="Mean_Reversion_Test_Run",
-    parameters={"lookback_period": 20, "threshold": 2.0}
-)
-
-# Analyze results
-results = await read_backtest(
-    project_id=project["project"]["projectId"],
-    backtest_id=backtest["backtest"]["backtestId"]
-)
-```
+> "I need to manage my QuantConnect projects. First, create a new Python project named 'My_Awesome_Strategy'. Then, create a file inside it called 'main.py' and add this code: `...your algorithm code here...`. After that, compile it and run a backtest named 'Initial Run'. When it's done, show me the performance results."
 
 ## ◈ Comprehensive API Reference
 
@@ -409,28 +304,12 @@ quantconnect-mcp/
 ### Core Design Principles
 
 - **◎ Modular Architecture**: Each tool category is cleanly separated for maintainability
-- **▪ Security First**: SHA-256 authenticated API with secure credential management  
+- **▪ Security First**: SHA-256 authenticated API with secure credential management
 - **⚡ Async Performance**: Non-blocking operations for maximum throughput
 - **◆ Type Safety**: Full type annotations with mypy verification
 - **⚙ Extensible**: Plugin-based architecture for easy feature additions
 
 ## ◈ Advanced Configuration
-
-### Transport Options
-
-```bash
-# STDIO (default) - Best for MCP clients
-uvx quantconnect-mcp
-
-# HTTP Server - Best for web integrations
-MCP_TRANSPORT=streamable-http MCP_HOST=0.0.0.0 MCP_PORT=8000 uvx quantconnect-mcp
-
-# Custom path for HTTP
-MCP_PATH=/api/v1/mcp uvx quantconnect-mcp
-
-# Development mode with local changes
-uv run quantconnect_mcp/main.py
-```
 
 ### Environment Variables
 
@@ -444,24 +323,17 @@ uv run quantconnect_mcp/main.py
 
 ### System Resources
 
-Monitor server performance and status:
+You can monitor server performance and status using natural language queries for system resources:
 
-```python
-# System information
-system_info = await get_resource("resource://system/info")
+> "Show me the server's system info."
 
-# Server status and active instances  
-server_status = await get_resource("resource://quantconnect/server/status")
+> "What's the current server status and are there any active QuantBook instances?"
 
-# Available tools summary
-tools_summary = await get_resource("resource://quantconnect/tools/summary")
+> "Give me a summary of all available tools."
 
-# Performance metrics
-performance = await get_resource("resource://quantconnect/performance/metrics")
+> "Get the latest performance metrics for the server."
 
-# Top processes by CPU usage
-top_processes = await get_resource("resource://system/processes/10")
-```
+> "What are the top 10 most resource-intensive processes running on the server?"
 
 ## ◈ Testing
 
@@ -481,19 +353,6 @@ pytest tests/test_auth.py -v
 pytest tests/ -n auto
 ```
 
-### Manual Testing
-
-```bash
-# Test authentication
-python -c "
-import asyncio
-from src.auth import validate_authentication
-print(asyncio.run(validate_authentication()))
-"
-
-# Test server startup
-uvx quantconnect-mcp --help
-```
 
 ## ◈ Contributing
 
@@ -546,7 +405,7 @@ git push origin feature/amazing-new-feature
 ### Pull Request Guidelines
 
 1. **◆ Clear Description**: Explain what and why, not just how
-2. **◆ Test Coverage**: Include tests for all new functionality  
+2. **◆ Test Coverage**: Include tests for all new functionality
 3. **◆ Documentation**: Update README and docstrings as needed
 4. **◆ Code Review**: Address all review feedback
 5. **◆ CI Passing**: All automated checks must pass
