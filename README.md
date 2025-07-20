@@ -8,9 +8,9 @@
 [![Code Style](https://img.shields.io/badge/Code%20Style-Black-black.svg)](https://github.com/psf/black)
 [![Type Checked](https://img.shields.io/badge/Type%20Checked-mypy-blue.svg)](https://mypy.readthedocs.io/)
 
-**Professional-grade Model Context Protocol server for QuantConnect's algorithmic trading platform**
+**Production-ready Model Context Protocol server for QuantConnect's algorithmic trading platform**
 
-*Seamlessly integrate QuantConnect's research environment, statistical analysis, and portfolio optimization into your AI workflows*
+*Integrate QuantConnect's research environment, statistical analysis, and portfolio optimization into your AI workflows. Locally hosted, secure & capable of dramatically improving productivity*
 
 [◉ Quick Start](#-quick-start) •
 [◉ Documentation](#-comprehensive-api-reference) •
@@ -128,9 +128,54 @@ export QUANTCONNECT_ORGANIZATION_ID="your_org_id"  # Optional
 
 This MCP server is designed to be used with natural language. Below are examples of how you can instruct an AI assistant to perform complex financial analysis tasks.
 
-### Financial Research Pipeline
+### Factor‑Driven Portfolio Construction Pipeline
 
-> "Build a diversified portfolio for me. Start by getting the constituents of the QQQ ETF at the beginning of 2024. From that list, find the 5 assets with the lowest correlation to each other over the last year. Finally, run a sparse optimization on those 5 assets to find the optimal portfolio weights, using SPY as the benchmark."
+> **“Build a global equity long/short portfolio for 2025:**
+> 1. Pull the **constituents of QQQ, SPY, and EEM** as of **2024‑12‑31** (survivor‑bias free).
+> 2. For each symbol, calculate **Fama‑French 5‑factor** and **quality‑minus‑junk** loadings using daily data **2022‑01‑01 → 2024‑12‑31**.
+> 3. Rank stocks into terciles on **value (B/M)** and **momentum (12‑1)**; go long top tercile, short bottom, beta‑neutral to the S&P 500.
+> 4. Within each book, apply **Hierarchical Risk Parity (HRP)** for position sizing, capped at **5 % gross exposure per leg**.
+> 5. Target **annualised ex‑ante volatility ≤ 10 %**; solve with **CVaR minimisation** under a 95 % confidence level.
+> 6. Benchmark against **MSCI World**; report **annualised return, vol, Sharpe, Sortino, max DD, hit‑rate, turnover** for the period **2023‑01‑01 → 2024‑12‑31**.
+> 7. Export the optimal weights and full tear‑sheet as `pdf` + `csv`.
+> 8. Schedule a monthly rebalance job and push signals to the live trading endpoint.”
+
+---
+
+### Robust Statistical‑Arbitrage Workflow
+
+> **“Test and refine a pairs‑trading idea:**
+> • Universe: **US Staples sector, market cap > $5 B, price > $10**.
+> • Data: **15‑minute bars, 2023‑01‑02 → 2025‑06‑30**.
+> • Step 1 – For all pairs, calculate **rolling 60‑day distance correlation**; keep pairs with dCor ≥ 0.80.
+> • Step 2 – Run **Johansen cointegration** (lag = 2) on the survivors; retain pairs with trace‑stat < 5 % critical value.
+> • Step 3 – For each cointegrated pair:
+>    – Estimate **half‑life of mean‑reversion**; discard if > 7 days.
+>    – Compute **Hurst exponent**; require H < 0.4.
+> • Step 4 – Simulate a **Bayesian Kalman‑filter spread** to allow time‑varying hedge ratios.
+> • Entry: z‑score crosses ±2 (two‑bar confirmation); Exit: z = 0 or t_max = 3 × half‑life.
+> • Risk: cap **pair notional at 3 % NAV**, portfolio **gross leverage ≤ 3 ×**, stop‑loss at z = 4.
+> • Output: trade log, PnL attribution, **bootstrapped p‑value of alpha**, and **Likelihood‑Ratio test** for regime shifts.”
+
+
+### Automated Project, Backtest & Hyper‑Parameter Sweep
+
+> **“Spin up an experiment suite in QuantConnect:**
+> 1. Create project **‘DynamicPairs_Kalman’** (Python).
+> 2. Add files:
+>    • `alpha.py` – signal generation (placeholder)
+>    • `risk.py` – custom position sizing
+>    • `config.yaml` – parameter grid:
+>        ```yaml
+>        entry_z:  [1.5, 2.0, 2.5]
+>        lookback: [30, 60, 90]
+>        hedge:    ['OLS', 'Kalman']
+>        ```
+> 3. Trigger a **parameter‑sweep backtest** labelled **‘GridSearch‑v1’** using **in‑sample 2022‑23**.
+> 4. When jobs finish, rank runs by **Information Ratio** and **max DD < 10 %**; persist **top‑3 configs**.
+> 5. Automatically launch **out‑of‑sample backtests 2024‑YTD** for the winners.
+> 6. Produce an executive summary: tables + charts (equity curve, rolling Sharpe, exposure histogram).
+> 7. Package the best model as a **Docker image**, push to registry, and deploy to the **live‑trading cluster** with a kill‑switch if **1‑day loss > 3 σ**.”
 
 ### Statistical Analysis Workflow
 
