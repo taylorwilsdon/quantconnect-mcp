@@ -75,7 +75,7 @@ pip install quantconnect-mcp
 3. **Configure:** In Claude Desktop → **Settings → Extensions → QuantConnect MCP**, paste your user ID and API token
 4. **Use it:** Start a new Claude chat and call any QuantConnect tool
 
->
+
 **Why DXT?**
 > Desktop Extensions (`.dxt`) bundle the server, dependencies, and manifest so users go from download → working MCP in **one click** – no terminal, no JSON editing, no version conflicts.
 
