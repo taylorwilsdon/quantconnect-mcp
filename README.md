@@ -19,25 +19,34 @@
 
 </div>
 
-> Demo - Roo Code
+<details open>
+<summary>Demo – Claude</summary>
+
 <div align="center">
-<video width="832" src="https://github.com/user-attachments/assets/4d0e8074-aa27-4041-befc-b4119b5eaec6"></video>
+  <video width="832" src="https://github.com/user-attachments/assets/61e96e0e-05b2-482b-8fe3-ccf078d64cc5"></video>
 </div>
+
+</details>
 
 
 ---
 
-## ◈ Why QuantConnect MCP Server?
+## ◈ Is this crazy?
+<div align="center">
+<img width="25%" height="25%" alt="image" src="https://github.com/user-attachments/assets/f282cb1e-7fde-4efd-b28c-2656c9f48fea" />
+</div>
+Maybe? Either way, the world is changing and this is where we're at. 
+Out of the box, QuantConnect MCP provides you with:
 
-Transform your algorithmic trading research with a **production-ready MCP server** that provides:
-
-- **⚙ Research Environment**: Full QuantBook integration for interactive financial analysis
-- **◆ Advanced Analytics**: PCA, cointegration testing, mean reversion analysis, and correlation studies
-- **↗ Portfolio Optimization**: Sophisticated sparse optimization with Huber Downward Risk minimization
-- **◎ Universe Selection**: ETF constituent analysis and multi-criteria asset screening
-- **▪ Enterprise Security**: SHA-256 authenticated API integration with QuantConnect
-- **⚡ High Performance**: Async-first design with concurrent data processing
-- **◆ AI-Native**: Designed for interaction via natural language in AI clients
+- **Full Project Lifecycle**: `Create`, `read`, `update`, and manage QuantConnect projects and files programmatically.
+- **End-to-End Backtesting**: `Create backtests` from compiles, `read detailed results`, and analyze `charts`, `orders`, and `insights`.
+- **Interactive Research**: Full `QuantBook` integration for dynamic financial analysis, including historical and `alternative data` retrieval.
+- **Advanced Analytics**: Perform `Principal Component Analysis (PCA)`, `Engle-Granger cointegration tests`, `mean-reversion analysis`, and `correlation studies`.
+- **Portfolio Optimization**: Utilize sophisticated `sparse optimization` with Huber Downward Risk minimization, calculate performance, and benchmark strategies.
+- **Universe Selection**: Dynamically `screen assets` by multiple criteria, analyze `ETF constituents`, and select assets based on correlation.
+- **Enterprise-Grade Security**: Secure, `SHA-256 authenticated` API integration with QuantConnect.
+- **High-Performance Core**: Built with an `async-first` design for concurrent data processing and responsiveness.
+- **AI-Native Interface**: Designed for seamless interaction via `natural language` in advanced AI clients.
 
 ## ◉ Table of Contents
 
@@ -123,6 +132,14 @@ export QUANTCONNECT_API_TOKEN="your_secure_token_here"
 export QUANTCONNECT_ORGANIZATION_ID="your_org_id"  # Optional
 ```
 
+<details open>
+<summary>Demo – Roo Code</summary>
+
+<div align="center">
+  <video width="832" src="https://github.com/user-attachments/assets/4d0e8074-aa27-4041-befc-b4119b5eaec6"></video>
+</div>
+
+</details>
 
 ## ◈ Natural Language Examples
 
