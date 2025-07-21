@@ -313,3 +313,55 @@ def register_project_tools(mcp: FastMCP):
                 "error": f"Failed to update project: {str(e)}",
                 "project_id": project_id,
             }
+
+    @mcp.tool()
+    async def compile_project(project_id: int) -> Dict[str, Any]:
+        """
+        Compile a project in QuantConnect.
+
+        Args:
+            project_id: The ID of the project to compile.
+
+        Returns:
+            A dictionary containing the compilation result.
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            response = await auth.make_authenticated_request(
+                endpoint=f"projects/{project_id}/compile", method="POST"
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    return {
+                        "status": "success",
+                        "compile_id": data.get("compileId"),
+                        "project_id": project_id,
+                        "message": "Project compilation started successfully.",
+                    }
+                else:
+                    return {
+                        "status": "error",
+                        "error": "Project compilation failed.",
+                        "details": data.get("errors", []),
+                        "project_id": project_id,
+                    }
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": response.text[:500] if hasattr(response, "text") else "No response text",
+                }
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"An unexpected error occurred: {e}",
+                "project_id": project_id,
+            }

@@ -84,6 +84,14 @@ def register_backtest_tools(mcp: FastMCP):
                 else:
                     # API returned success=false
                     errors = data.get("errors", ["Unknown error"])
+                    if any("Compile id not found" in e for e in errors):
+                        return {
+                            "status": "error",
+                            "error": "Compile ID not found. Please compile the project first using the 'compile_project' tool.",
+                            "details": errors,
+                            "project_id": project_id,
+                            "compile_id": compile_id,
+                        }
                     return {
                         "status": "error",
                         "error": "Backtest creation failed",
