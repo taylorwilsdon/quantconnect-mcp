@@ -35,11 +35,11 @@
 <div align="center">
 <img width="25%" height="25%" alt="image" src="https://github.com/user-attachments/assets/f282cb1e-7fde-4efd-b28c-2656c9f48fea" />
 </div>
-Maybe? Either way, the world is changing and this is where we're at. 
+Maybe? Either way, the world is changing and this is where we're at.
 Out of the box, QuantConnect MCP provides you with:
 
-- **Full Project Lifecycle**: `Create`, `read`, `update`, and manage QuantConnect projects and files programmatically.
-- **End-to-End Backtesting**: `Create backtests` from compiles, `read detailed results`, and analyze `charts`, `orders`, and `insights`.
+- **Full Project Lifecycle**: `Create`, `read`, `update`, `compile`, and manage QuantConnect projects and files programmatically.
+- **End-to-End Backtesting**: `Compile` projects, `create backtests`, `read detailed results`, and analyze `charts`, `orders`, and `insights`.
 - **Interactive Research**: Full `QuantBook` integration for dynamic financial analysis, including historical and `alternative data` retrieval.
 - **Advanced Analytics**: Perform `Principal Component Analysis (PCA)`, `Engle-Granger cointegration tests`, `mean-reversion analysis`, and `correlation studies`.
 - **Portfolio Optimization**: Utilize sophisticated `sparse optimization` with Huber Downward Risk minimization, calculate performance, and benchmark strategies.
@@ -221,6 +221,7 @@ This MCP server is designed to be used with natural language. Below are examples
 | `create_project` | Create new QuantConnect project | `name`, `language`, `organization_id` |
 | `read_project` | Get project details or list all | `project_id` (optional) |
 | `update_project` | Update project name/description | `project_id`, `name`, `description` |
+| `compile_project` | Compile a project for backtesting | `project_id` |
 
 ### ◆ File Management Tools
 
@@ -280,7 +281,7 @@ This MCP server is designed to be used with natural language. Below are examples
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `create_backtest` | Create new backtest | `project_id`, `compile_id`, `backtest_name` |
+| `create_backtest` | Create new backtest from compile | `project_id`, `compile_id`, `backtest_name` |
 | `read_backtest` | Get backtest results | `project_id`, `backtest_id`, `chart` |
 | `read_backtest_chart` | Get chart data | `project_id`, `backtest_id`, `name` |
 | `read_backtest_orders` | Get order history | `project_id`, `backtest_id`, `start`, `end` |

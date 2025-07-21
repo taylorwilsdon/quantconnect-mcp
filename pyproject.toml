@@ -21,6 +21,8 @@ dependencies = [
     "scipy>=1.15.3",
     "seaborn>=0.13.2",
     "statsmodels>=0.14.4",
+    "quantconnect-lean",
+    "quantconnect>=0.1.0",
 ]
 
 [project.scripts]

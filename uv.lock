@@ -947,6 +947,24 @@ wheels = [
 ]
 
 [[package]]
+name = "quantconnect"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/2a/2762a4e3497d35830ac5122fd2bcb7f5fb996f7c8ea47a255c03378466ff/quantconnect-0.1.0.tar.gz", hash = "sha256:9c47411e925141112b40893e0ae1b9364e63b487ce710322cb031d57e022ffd2", size = 921, upload_time = "2020-06-19T21:59:54.104Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/26/30/6624de8b559a496cf34957c4bdb25622713754bcbdfefc06812ed841e92f/quantconnect-0.1.0-py3-none-any.whl", hash = "sha256:c134dcfaf628066932984bc28377c4d717658af108fc70e1f603e5c63856be15", size = 5313, upload_time = "2020-06-19T21:59:52.096Z" },
+]
+
+[[package]]
+name = "quantconnect-lean"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/b2/1224d53810b0f933ff0bf5ca6e01f3c36486fe3692cc70acb07e2ea816b3/quantconnect-lean-0.1.0.tar.gz", hash = "sha256:9142b085657c742ef7a9f82e6e391c6ff3ce3e563db7cd85aa9592e67897dfba", size = 936, upload_time = "2020-06-19T22:03:01.252Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/69/00/a9ac5615a5b6be182e7e95aa7cd9019e9f59a6bee3a4642a0b5b254c84db/quantconnect_lean-0.1.0-py3-none-any.whl", hash = "sha256:5364adaab7198866298c4a1ecfbc207dc676b545b03e0d75c05ac50cfd069569", size = 5368, upload_time = "2020-06-19T22:03:00.146Z" },
+]
+
+[[package]]
 name = "quantconnect-mcp"
 version = "0.1.7"
 source = { editable = "." }
@@ -959,6 +977,8 @@ dependencies = [
     { name = "pandas" },
     { name = "psutil" },
     { name = "pytest-asyncio" },
+    { name = "quantconnect" },
+    { name = "quantconnect-lean" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "seaborn" },
@@ -985,6 +1005,8 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.3.0" },
     { name = "psutil", specifier = ">=7.0.0" },
     { name = "pytest-asyncio", specifier = ">=1.0.0" },
+    { name = "quantconnect", specifier = ">=0.1.0" },
+    { name = "quantconnect-lean" },
     { name = "scikit-learn", specifier = ">=1.7.0" },
     { name = "scipy", specifier = ">=1.15.3" },
     { name = "seaborn", specifier = ">=0.13.2" },
