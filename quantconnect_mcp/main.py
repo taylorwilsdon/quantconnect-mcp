@@ -24,6 +24,7 @@ from quantconnect_mcp.src.tools import (
 )
 from quantconnect_mcp.src.resources import register_system_resources
 from quantconnect_mcp.src.auth import configure_auth
+from quantconnect_mcp.src.utils import safe_print
 
 
 def main():
@@ -36,17 +37,17 @@ def main():
 
     if user_id and api_token:
         try:
-            print("🔐 Configuring QuantConnect authentication from environment...")
+            safe_print("🔐 Configuring QuantConnect authentication from environment...")
             configure_auth(user_id, api_token, organization_id)
-            print("✅ Authentication configured successfully")
+            safe_print("✅ Authentication configured successfully")
         except Exception as e:
-            print(f"⚠️  Failed to configure authentication: {e}")
-            print(
+            safe_print(f"⚠️  Failed to configure authentication: {e}")
+            safe_print(
                 "💡 You can configure authentication later using the configure_quantconnect_auth tool"
             )
 
     # Register all tool modules
-    print("🔧 Registering QuantConnect tools...")
+    safe_print("🔧 Registering QuantConnect tools...")
     register_auth_tools(mcp)
     register_project_tools(mcp)
     register_file_tools(mcp)
@@ -58,10 +59,10 @@ def main():
     register_universe_tools(mcp)
 
     # Register resources
-    print("📊 Registering system resources...")
+    safe_print("📊 Registering system resources...")
     register_system_resources(mcp)
 
-    print(f"✅ QuantConnect MCP Server initialized")
+    safe_print(f"✅ QuantConnect MCP Server initialized")
 
     # Determine transport method
     transport = os.getenv("MCP_TRANSPORT", "stdio")
@@ -69,7 +70,7 @@ def main():
     if transport == "streamable-http":
         host = os.getenv("MCP_HOST", "0.0.0.0")
         port = int(os.getenv("MCP_PORT", os.getenv("PORT", "8000")))
-        print(f"🌐 Starting HTTP server on {host}:{port}")
+        safe_print(f"🌐 Starting HTTP server on {host}:{port}")
         mcp.run(
             transport="streamable-http",
             host=host,
@@ -77,10 +78,10 @@ def main():
             path=os.getenv("MCP_PATH", "/mcp"),
         )
     elif transport == "stdio":
-        print("📡 Starting STDIO transport")
+        safe_print("📡 Starting STDIO transport")
         mcp.run()  # Default stdio transport
     else:
-        print(f"🚀 Starting with {transport} transport")
+        safe_print(f"🚀 Starting with {transport} transport")
         mcp.run(transport=transport)
 
 
