@@ -1012,6 +1012,15 @@ wheels = [
 ]
 
 [[package]]
+name = "quantconnect"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/2a/2762a4e3497d35830ac5122fd2bcb7f5fb996f7c8ea47a255c03378466ff/quantconnect-0.1.0.tar.gz", hash = "sha256:9c47411e925141112b40893e0ae1b9364e63b487ce710322cb031d57e022ffd2", size = 921, upload_time = "2020-06-19T21:59:54.104Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/26/30/6624de8b559a496cf34957c4bdb25622713754bcbdfefc06812ed841e92f/quantconnect-0.1.0-py3-none-any.whl", hash = "sha256:c134dcfaf628066932984bc28377c4d717658af108fc70e1f603e5c63856be15", size = 5313, upload_time = "2020-06-19T21:59:52.096Z" },
+]
+
+[[package]]
 name = "quantconnect-lean"
 version = "0.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1026,7 +1035,6 @@ version = "0.1.11"
 source = { editable = "." }
 dependencies = [
     { name = "arch" },
-    { name = "docker" },
     { name = "fastmcp" },
     { name = "httpx" },
     { name = "matplotlib" },
@@ -1034,11 +1042,17 @@ dependencies = [
     { name = "pandas" },
     { name = "psutil" },
     { name = "pytest-asyncio" },
+    { name = "quantconnect" },
     { name = "quantconnect-lean" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "seaborn" },
     { name = "statsmodels" },
+]
+
+[package.optional-dependencies]
+quantbook = [
+    { name = "docker" },
 ]
 
 [package.dev-dependencies]
@@ -1055,7 +1069,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "arch", specifier = ">=7.2.0" },
-    { name = "docker", specifier = ">=7.1.0" },
+    { name = "docker", marker = "extra == 'quantbook'", specifier = ">=7.1.0" },
     { name = "fastmcp", specifier = ">=2.7.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "matplotlib", specifier = ">=3.10.3" },
@@ -1063,12 +1077,14 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.3.0" },
     { name = "psutil", specifier = ">=7.0.0" },
     { name = "pytest-asyncio", specifier = ">=1.0.0" },
+    { name = "quantconnect", specifier = ">=0.1.0" },
     { name = "quantconnect-lean" },
     { name = "scikit-learn", specifier = ">=1.7.0" },
     { name = "scipy", specifier = ">=1.15.3" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "statsmodels", specifier = ">=0.14.4" },
 ]
+provides-extras = ["quantbook"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -331,3 +331,15 @@ async def get_quantbook_session(instance_name: str = "default") -> Optional[Rese
     except Exception as e:
         logger.error(f"Failed to get QuantBook session '{instance_name}': {e}")
         return None
+
+
+def get_quantbook_instance(instance_name: str = "default"):
+    """
+    Legacy compatibility function for get_quantbook_instance.
+    Returns None since the old synchronous API is no longer supported.
+    
+    This function exists to prevent import errors but will return None,
+    causing tools that depend on it to fail gracefully.
+    """
+    logger.warning(f"get_quantbook_instance is deprecated and no longer functional. Use get_quantbook_session instead.")
+    return None

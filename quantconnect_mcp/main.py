@@ -40,7 +40,8 @@ def check_quantbook_support() -> bool:
 def import_quantbook_modules():
     """Conditionally import QuantBook modules."""
     try:
-        from quantconnect_mcp.src.tools import register_quantbook_tools, register_data_tools
+        from quantconnect_mcp.src.tools.quantbook_tools import register_quantbook_tools
+        from quantconnect_mcp.src.tools.data_tools import register_data_tools
         return register_quantbook_tools, register_data_tools
     except ImportError as e:
         safe_print(f"⚠️  QuantBook dependencies not available: {e}")
