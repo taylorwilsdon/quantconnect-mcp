@@ -50,16 +50,30 @@ def register_quantbook_tools(mcp: FastMCP):
                 timeout=timeout,
             )
 
-            # Initialize QuantBook in the container
+            # Initialize QuantBook in the container (like lean-cli)
             init_code = """
-from QuantConnect.Research import QuantBook
+# Import necessary modules
 import pandas as pd
 import numpy as np
+import sys
+import os
 
-# Create global QuantBook instance
-qb = QuantBook()
-print(f"QuantBook initialized successfully")
-print(f"Available methods: {len([m for m in dir(qb) if not m.startswith('_')]):d}")
+# Set up LEAN environment
+sys.path.append('/Lean')
+
+try:
+    from QuantConnect.Research import QuantBook
+    from QuantConnect import *
+    
+    # Create global QuantBook instance
+    qb = QuantBook()
+    print(f"QuantBook initialized successfully in LEAN environment")
+    print(f"Available methods: {len([m for m in dir(qb) if not m.startswith('_')]):d}")
+    print(f"LEAN modules loaded: QuantConnect available")
+except ImportError as e:
+    print(f"Warning: LEAN modules not fully available: {e}")
+    print("Basic Python environment ready (pandas, numpy)")
+    qb = None
 """
 
             result = await session.execute(init_code)
