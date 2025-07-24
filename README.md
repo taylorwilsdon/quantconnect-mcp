@@ -67,6 +67,8 @@ Get up and running in under 2 minutes:
 > **Prerequisites:** You must have QuantConnect credentials (User ID and API Token) before running the server. The server will not function without proper authentication. See [Authentication](#-authentication) section for details on obtaining these credentials.
 
 ### **Install with uvx (Recommended)**
+
+#### Core Installation (API Tools Only)
 ```bash
 # Install and run directly from PyPI - no cloning required!
 uvx quantconnect-mcp
@@ -74,6 +76,16 @@ uvx quantconnect-mcp
 # Or install with uv/pip
 uv pip install quantconnect-mcp
 pip install quantconnect-mcp
+```
+
+#### Full Installation (with QuantBook Support)
+```bash
+# Install with QuantBook container functionality
+uv pip install "quantconnect-mcp[quantbook]"
+pip install "quantconnect-mcp[quantbook]"
+
+# Requires Docker to be installed and running
+docker --version  # Ensure Docker is available
 ```
 
 
@@ -94,6 +106,9 @@ pip install quantconnect-mcp
 export QUANTCONNECT_USER_ID="your_user_id"        # Required
 export QUANTCONNECT_API_TOKEN="your_api_token"    # Required
 export QUANTCONNECT_ORGANIZATION_ID="your_org_id" # Optional
+
+# Optional: Enable QuantBook container functionality (default: false)
+export ENABLE_QUANTBOOK="true"                    # Requires Docker + quantconnect-mcp[quantbook]
 ```
 
 ### 3. **Launch the Server**
@@ -101,11 +116,50 @@ export QUANTCONNECT_ORGANIZATION_ID="your_org_id" # Optional
 # STDIO transport (default) - Recommended for MCP clients
 uvx quantconnect-mcp
 
+# With QuantBook functionality enabled
+ENABLE_QUANTBOOK=true uvx quantconnect-mcp
+
 # HTTP transport
 MCP_TRANSPORT=streamable-http MCP_PORT=8000 uvx quantconnect-mcp
+
+# Full configuration example
+ENABLE_QUANTBOOK=true \
+LOG_LEVEL=DEBUG \
+MCP_TRANSPORT=streamable-http \
+MCP_PORT=8000 \
+uvx quantconnect-mcp
 ```
 
-### 4. **Interact with Natural Language**
+### 4. **QuantBook Container Functionality (Optional)**
+
+The server supports optional QuantBook functionality that runs research environments in secure Docker containers. This provides:
+
+- **🐳 Containerized Execution**: Each QuantBook instance runs in an isolated Docker container
+- **🔒 Enhanced Security**: Non-root users, capability dropping, resource limits
+- **⚡ Scalable Sessions**: Multiple concurrent research sessions with automatic cleanup
+- **📊 Interactive Analysis**: Execute Python code with full QuantConnect research libraries
+
+#### **Requirements**
+- Docker installed and running
+- Install with QuantBook support: `pip install "quantconnect-mcp[quantbook]"`
+- Set environment variable: `ENABLE_QUANTBOOK=true`
+
+#### **Security Features**
+- Containers run as non-root users (1000:1000)
+- Network isolation (no external network access)
+- Resource limits (configurable memory and CPU)
+- Automatic session timeout and cleanup
+- Code execution monitoring and logging
+
+#### **Container Configuration**
+```bash
+# Container resource limits (optional)
+export QUANTBOOK_MEMORY_LIMIT="2g"      # Default: 2GB RAM
+export QUANTBOOK_CPU_LIMIT="1.0"        # Default: 1 CPU core
+export QUANTBOOK_SESSION_TIMEOUT="3600" # Default: 1 hour timeout
+```
+
+### 5. **Interact with Natural Language**
 
 Instead of calling tools programmatically, you use natural language with a connected AI client (like Claude, a GPT, or any other MCP-compatible interface).
 
@@ -232,24 +286,26 @@ This MCP server is designed to be used with natural language. Below are examples
 | `update_file_content` | Update file content | `project_id`, `name`, `content` |
 | `update_file_name` | Rename file in project | `project_id`, `old_file_name`, `new_name` |
 
-### ◆ QuantBook Research Tools
+### ◆ QuantBook Research Tools (Optional - Requires ENABLE_QUANTBOOK=true)
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `initialize_quantbook` | Create new research instance | `instance_name`, `organization_id`, `token` |
-| `list_quantbook_instances` | View all active instances | - |
-| `get_quantbook_info` | Get instance details | `instance_name` |
-| `remove_quantbook_instance` | Clean up instance | `instance_name` |
+| `initialize_quantbook` | Create new containerized research instance | `instance_name`, `memory_limit`, `cpu_limit`, `timeout` |
+| `list_quantbook_instances` | View all active container instances | - |
+| `get_quantbook_info` | Get container instance details | `instance_name` |
+| `remove_quantbook_instance` | Clean up container instance | `instance_name` |
+| `execute_quantbook_code` | Execute Python code in container | `code`, `instance_name`, `timeout` |
+| `get_session_manager_status` | Get container session manager status | - |
 
-### ◆ Data Retrieval Tools
+### ◆ Data Retrieval Tools (Optional - Requires ENABLE_QUANTBOOK=true)
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `add_equity` | Add single equity security | `ticker`, `resolution`, `instance_name` |
-| `add_multiple_equities` | Add multiple securities | `tickers`, `resolution`, `instance_name` |
-| `get_history` | Get historical price data | `symbols`, `start_date`, `end_date`, `resolution` |
-| `add_alternative_data` | Subscribe to alt data | `data_type`, `symbol`, `instance_name` |
-| `get_alternative_data_history` | Get alt data history | `data_type`, `symbols`, `start_date`, `end_date` |
+| `add_equity` | Add single equity security to container | `ticker`, `resolution`, `instance_name` |
+| `add_multiple_equities` | Add multiple securities to container | `tickers`, `resolution`, `instance_name` |
+| `get_history` | Get historical price data in container | `symbols`, `start_date`, `end_date`, `resolution` |
+| `add_alternative_data` | Subscribe to alt data in container | `data_type`, `symbol`, `instance_name` |
+| `get_alternative_data_history` | Get alt data history in container | `data_type`, `symbols`, `start_date`, `end_date` |
 
 ### ◆ Statistical Analysis Tools
 
@@ -331,6 +387,7 @@ quantconnect-mcp/
 
 ### Environment Variables
 
+#### Core Server Configuration
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `MCP_TRANSPORT` | Transport method | `stdio` | `streamable-http` |
@@ -338,6 +395,23 @@ quantconnect-mcp/
 | `MCP_PORT` | Server port | `8000` | `3000` |
 | `MCP_PATH` | HTTP endpoint path | `/mcp` | `/api/v1/mcp` |
 | `LOG_LEVEL` | Logging verbosity | `INFO` | `DEBUG` |
+| `LOG_FILE` | Log file path | None | `/var/log/quantconnect-mcp.log` |
+
+#### QuantConnect Authentication
+| Variable | Description | Required | Example |
+|----------|-------------|----------|---------|
+| `QUANTCONNECT_USER_ID` | Your QuantConnect user ID | ◉ Yes | `123456` |
+| `QUANTCONNECT_API_TOKEN` | Your QuantConnect API token | ◉ Yes | `abc123...` |
+| `QUANTCONNECT_ORGANIZATION_ID` | Organization ID (optional) | ◦ No | `org123` |
+
+#### QuantBook Container Configuration (Optional)
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `ENABLE_QUANTBOOK` | Enable QuantBook functionality | `false` | `true` |
+| `QUANTBOOK_MEMORY_LIMIT` | Container memory limit | `2g` | `4g` |
+| `QUANTBOOK_CPU_LIMIT` | Container CPU limit | `1.0` | `2.0` |
+| `QUANTBOOK_SESSION_TIMEOUT` | Session timeout (seconds) | `3600` | `7200` |
+| `QUANTBOOK_MAX_SESSIONS` | Maximum concurrent sessions | `10` | `20` |
 
 ### System Resources
 

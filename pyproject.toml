@@ -25,6 +25,11 @@ dependencies = [
     "quantconnect>=0.1.0",
 ]
 
+[project.optional-dependencies]
+quantbook = [
+    "docker>=7.1.0",
+]
+
 [project.scripts]
 quantconnect-mcp = "quantconnect_mcp.main:main"
 

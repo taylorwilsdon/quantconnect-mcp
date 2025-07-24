@@ -1,11 +1,14 @@
-"""Data Retrieval Tools for QuantConnect MCP Server"""
+"""Data Retrieval Tools for QuantConnect MCP Server (Container-Based)"""
 
 from fastmcp import FastMCP
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 import pandas as pd
 import json
-from .quantbook_tools import get_quantbook_instance
+import logging
+from .quantbook_tools import get_quantbook_session
+
+logger = logging.getLogger(__name__)
 
 
 def register_data_tools(mcp: FastMCP):
@@ -26,40 +29,80 @@ def register_data_tools(mcp: FastMCP):
         Returns:
             Dictionary containing the added security information
         """
-        qb = get_quantbook_instance(instance_name)
-        if qb is None:
+        session = await get_quantbook_session(instance_name)
+        if session is None:
             return {
                 "status": "error",
                 "error": f"QuantBook instance '{instance_name}' not found",
+                "message": "Initialize a QuantBook instance first using initialize_quantbook",
             }
 
         try:
-            from QuantConnect import Resolution  # type: ignore
-
-            # Map string resolution to enum
-            resolution_map = {
-                "Minute": Resolution.Minute,
-                "Hour": Resolution.Hour,
-                "Daily": Resolution.Daily,
-            }
-
-            if resolution not in resolution_map:
+            # Validate resolution
+            valid_resolutions = ["Minute", "Hour", "Daily"]
+            if resolution not in valid_resolutions:
                 return {
                     "status": "error",
-                    "error": f"Invalid resolution '{resolution}'. Must be one of: {list(resolution_map.keys())}",
+                    "error": f"Invalid resolution '{resolution}'. Must be one of: {valid_resolutions}",
                 }
 
-            symbol = qb.AddEquity(ticker, resolution_map[resolution]).Symbol
+            # Execute code to add equity in container
+            add_equity_code = f"""
+from QuantConnect import Resolution
+
+# Map string resolution to enum
+resolution_map = {{
+    "Minute": Resolution.Minute,
+    "Hour": Resolution.Hour,
+    "Daily": Resolution.Daily,
+}}
+
+try:
+    # Add equity to QuantBook
+    security = qb.AddEquity("{ticker}", resolution_map["{resolution}"])
+    symbol = str(security.Symbol)
+    
+    print(f"Successfully added equity '{ticker}' with {resolution} resolution")
+    print(f"Symbol: {{symbol}}")
+    
+    # Store result for return
+    result = {{
+        "ticker": "{ticker}",
+        "symbol": symbol,
+        "resolution": "{resolution}",
+        "success": True
+    }}
+    
+except Exception as e:
+    print(f"Failed to add equity '{ticker}': {{e}}")
+    result = {{
+        "ticker": "{ticker}",
+        "error": str(e),
+        "success": False
+    }}
+"""
+
+            execution_result = await session.execute(add_equity_code)
+            
+            if execution_result["status"] != "success":
+                return {
+                    "status": "error",
+                    "error": execution_result.get("error", "Unknown error"),
+                    "message": f"Failed to add equity '{ticker}'",
+                    "execution_output": execution_result.get("output", ""),
+                }
 
             return {
                 "status": "success",
                 "ticker": ticker,
-                "symbol": str(symbol),
                 "resolution": resolution,
                 "message": f"Successfully added equity '{ticker}' with {resolution} resolution",
+                "execution_output": execution_result.get("output", ""),
+                "instance_name": instance_name,
             }
 
         except Exception as e:
+            logger.error(f"Failed to add equity '{ticker}' in instance '{instance_name}': {e}")
             return {
                 "status": "error",
                 "error": str(e),
@@ -81,52 +124,84 @@ def register_data_tools(mcp: FastMCP):
         Returns:
             Dictionary containing results for all added securities
         """
-        qb = get_quantbook_instance(instance_name)
-        if qb is None:
+        session = await get_quantbook_session(instance_name)
+        if session is None:
             return {
                 "status": "error",
                 "error": f"QuantBook instance '{instance_name}' not found",
+                "message": "Initialize a QuantBook instance first using initialize_quantbook",
             }
 
         try:
-            from QuantConnect import Resolution  # type: ignore
-
-            resolution_map = {
-                "Minute": Resolution.Minute,
-                "Hour": Resolution.Hour,
-                "Daily": Resolution.Daily,
-            }
-
-            if resolution not in resolution_map:
+            # Validate resolution
+            valid_resolutions = ["Minute", "Hour", "Daily"]
+            if resolution not in valid_resolutions:
                 return {
                     "status": "error",
-                    "error": f"Invalid resolution '{resolution}'. Must be one of: {list(resolution_map.keys())}",
+                    "error": f"Invalid resolution '{resolution}'. Must be one of: {valid_resolutions}",
                 }
 
-            results = []
-            symbols = {}
+            # Convert tickers list to Python code representation
+            tickers_str = str(tickers)
 
-            for ticker in tickers:
-                try:
-                    symbol = qb.AddEquity(ticker, resolution_map[resolution]).Symbol
-                    symbols[ticker] = str(symbol)
-                    results.append(
-                        {"ticker": ticker, "symbol": str(symbol), "status": "success"}
-                    )
-                except Exception as e:
-                    results.append(
-                        {"ticker": ticker, "status": "error", "error": str(e)}
-                    )
+            # Execute code to add multiple equities in container
+            add_multiple_code = f"""
+from QuantConnect import Resolution
+
+# Map string resolution to enum
+resolution_map = {{
+    "Minute": Resolution.Minute,
+    "Hour": Resolution.Hour,
+    "Daily": Resolution.Daily,
+}}
+
+tickers = {tickers_str}
+resolution = "{resolution}"
+results = []
+symbols = {{}}
+
+for ticker in tickers:
+    try:
+        security = qb.AddEquity(ticker, resolution_map[resolution])
+        symbol = str(security.Symbol)
+        symbols[ticker] = symbol
+        results.append({{
+            "ticker": ticker,
+            "symbol": symbol,
+            "status": "success"
+        }})
+        print(f"Added equity {{ticker}} with symbol {{symbol}}")
+    except Exception as e:
+        results.append({{
+            "ticker": ticker,
+            "status": "error",
+            "error": str(e)
+        }})
+        print(f"Failed to add equity {{ticker}}: {{e}}")
+
+print(f"Successfully added {{len([r for r in results if r['status'] == 'success'])}} out of {{len(tickers)}} equities")
+"""
+
+            execution_result = await session.execute(add_multiple_code)
+            
+            if execution_result["status"] != "success":
+                return {
+                    "status": "error",
+                    "error": execution_result.get("error", "Unknown error"),
+                    "message": "Failed to add multiple equities",
+                    "execution_output": execution_result.get("output", ""),
+                }
 
             return {
                 "status": "success",
                 "resolution": resolution,
-                "symbols": symbols,
-                "results": results,
-                "total_added": len([r for r in results if r["status"] == "success"]),
+                "message": f"Processed {len(tickers)} equities",
+                "execution_output": execution_result.get("output", ""),
+                "instance_name": instance_name,
             }
 
         except Exception as e:
+            logger.error(f"Failed to add multiple equities in instance '{instance_name}': {e}")
             return {
                 "status": "error",
                 "error": str(e),
