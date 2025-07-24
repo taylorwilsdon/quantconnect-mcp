@@ -253,46 +253,88 @@ class ResearchSession:
                 raise ResearchSessionError(f"Failed to check container status: {e}")
             
             # Execute code directly in container using exec_run (like lean-cli)
-            # Create a temporary Python script
+            # Create a simple Python script that preserves stdout for Docker capture
             script_content = f"""#!/usr/bin/env python3
 import sys
 import traceback
 import pandas as pd
 import numpy as np
-from io import StringIO
-
-# Capture stdout
-old_stdout = sys.stdout
-sys.stdout = captured_output = StringIO()
 
 try:
-    # Execute the user code
+    # Execute the user code directly - let prints go to stdout
 {chr(10).join('    ' + line for line in code.split(chr(10)))}
-    
-    output = captured_output.getvalue()
-    print(output, file=old_stdout, end='')
 except Exception as e:
-    sys.stdout = old_stdout
-    print(captured_output.getvalue(), end='')
+    # Print error to stderr so it doesn't interfere with stdout
     print(f"Error: {{e}}", file=sys.stderr)
-    traceback.print_exc()
+    traceback.print_exc(file=sys.stderr)
     sys.exit(1)
-finally:
-    sys.stdout = old_stdout
 """
             
-            # Use asyncio timeout for better control
+            # Create execution command
+            exec_cmd = f'python3 -c {json.dumps(script_content)}'
+            
+            # Use Docker streaming API for real-time output capture (like LEAN CLI)
             try:
-                exec_result = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        self.container.exec_run,
-                        f'python3 -c {json.dumps(script_content)}',
-                        workdir=self.NOTEBOOKS_PATH,
-                        stdout=True,
-                        stderr=True,
-                    ),
-                    timeout=execution_timeout
+                # Create exec instance
+                exec_instance = await asyncio.to_thread(
+                    self.container.client.api.exec_create,
+                    self.container.id,
+                    exec_cmd,
+                    stdout=True,
+                    stderr=True,
+                    workdir=self.NOTEBOOKS_PATH,
+                    tty=False
                 )
+                
+                # Start execution and get output stream
+                output_stream = await asyncio.to_thread(
+                    self.container.client.api.exec_start,
+                    exec_instance['Id'],
+                    stream=True,
+                    tty=False
+                )
+                
+                # Collect output with timeout
+                output_chunks = []
+                start_time = asyncio.get_event_loop().time()
+                
+                async def collect_output():
+                    chunk_buffer = b""
+                    for chunk in output_stream:
+                        # Check timeout
+                        if asyncio.get_event_loop().time() - start_time > execution_timeout:
+                            raise asyncio.TimeoutError()
+                        
+                        # Buffer management for complete lines (like LEAN CLI)
+                        chunk_buffer += chunk
+                        
+                        # Process complete lines
+                        while b'\n' in chunk_buffer:
+                            line_end = chunk_buffer.find(b'\n')
+                            line = chunk_buffer[:line_end + 1]
+                            chunk_buffer = chunk_buffer[line_end + 1:]
+                            output_chunks.append(line)
+                        
+                        # Yield control to allow timeout checks
+                        await asyncio.sleep(0)
+                    
+                    # Don't forget remaining buffer content
+                    if chunk_buffer:
+                        output_chunks.append(chunk_buffer)
+                
+                # Run output collection with timeout
+                await asyncio.wait_for(collect_output(), timeout=execution_timeout)
+                
+                # Get execution result
+                exec_info = await asyncio.to_thread(
+                    self.container.client.api.exec_inspect,
+                    exec_instance['Id']
+                )
+                exit_code = exec_info.get('ExitCode', 0)
+                
+                # Decode collected output
+                full_output = b''.join(output_chunks).decode('utf-8', errors='replace')
+                
             except asyncio.TimeoutError:
                 security_logger.log_resource_limit_hit(
                     self.session_id, "EXECUTION_TIMEOUT", f"{execution_timeout}s"
@@ -306,34 +348,32 @@ finally:
                     "timeout": True,
                 }
             
-            # Removed duplicate exit code check - handled below
+            # Log the output for debugging
+            container_logger.debug(f"Container output (exit_code: {exit_code}): {repr(full_output[:200])}")
             
-            # Parse result with enhanced error handling - simplified approach like lean-cli
-            output_text = exec_result.output.decode() if exec_result.output else ""
-            
-            # Check execution status based on exit code (simpler, more reliable)
-            if exec_result.exit_code == 0:
-                # Success
+            # Check execution status based on exit code
+            if exit_code == 0:
+                # Success - return stdout content
                 security_logger.log_code_execution(self.session_id, code_hash, True)
                 container_logger.info(f"Code execution successful (hash: {code_hash})")
                 
                 return {
                     "status": "success",
-                    "output": output_text,
+                    "output": full_output.strip(),  # Remove trailing whitespace
                     "error": None,
                     "session_id": self.session_id,
                 }
             else:
-                # Error
+                # Error - output contains both stdout and stderr
                 security_logger.log_code_execution(self.session_id, code_hash, False)
-                container_logger.error(f"Code execution failed (hash: {code_hash}, exit_code: {exec_result.exit_code})")
+                container_logger.error(f"Code execution failed (hash: {code_hash}, exit_code: {exit_code})")
                 
                 return {
                     "status": "error",
-                    "output": output_text,
-                    "error": f"Code execution failed with exit code {exec_result.exit_code}",
+                    "output": full_output.strip(),
+                    "error": f"Code execution failed with exit code {exit_code}",
                     "session_id": self.session_id,
-                    "exit_code": exec_result.exit_code,
+                    "exit_code": exit_code,
                 }
         
         except ResearchSessionError:

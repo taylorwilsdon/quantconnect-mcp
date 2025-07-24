@@ -73,6 +73,12 @@ try:
         "success": True
     }}
     
+    # Print result as JSON for MCP to parse
+    import json
+    print("=== QUANTBOOK_RESULT_START ===")
+    print(json.dumps(result))
+    print("=== QUANTBOOK_RESULT_END ===")
+    
 except Exception as e:
     print(f"Failed to add equity '{ticker}': {{e}}")
     result = {{
@@ -80,6 +86,12 @@ except Exception as e:
         "error": str(e),
         "success": False
     }}
+    
+    # Print error result as JSON
+    import json
+    print("=== QUANTBOOK_RESULT_START ===")
+    print(json.dumps(result))
+    print("=== QUANTBOOK_RESULT_END ===")
 """
 
             execution_result = await session.execute(add_equity_code)
@@ -92,14 +104,59 @@ except Exception as e:
                     "execution_output": execution_result.get("output", ""),
                 }
 
-            return {
-                "status": "success",
-                "ticker": ticker,
-                "resolution": resolution,
-                "message": f"Successfully added equity '{ticker}' with {resolution} resolution",
-                "execution_output": execution_result.get("output", ""),
-                "instance_name": instance_name,
-            }
+            # Parse the JSON result from container output
+            output = execution_result.get("output", "")
+            parsed_result = None
+            
+            try:
+                # Extract JSON result from container output
+                if "=== QUANTBOOK_RESULT_START ===" in output and "=== QUANTBOOK_RESULT_END ===" in output:
+                    start_marker = output.find("=== QUANTBOOK_RESULT_START ===")
+                    end_marker = output.find("=== QUANTBOOK_RESULT_END ===")
+                    if start_marker != -1 and end_marker != -1:
+                        json_start = start_marker + len("=== QUANTBOOK_RESULT_START ===\n")
+                        json_content = output[json_start:end_marker].strip()
+                        parsed_result = json.loads(json_content)
+                
+                if parsed_result and parsed_result.get("success"):
+                    # Return successful result with parsed data
+                    return {
+                        "status": "success",
+                        "ticker": ticker,
+                        "symbol": parsed_result.get("symbol", ticker),
+                        "resolution": resolution,
+                        "message": f"Successfully added equity '{ticker}' with {resolution} resolution",
+                        "execution_output": output,
+                        "instance_name": instance_name,
+                    }
+                elif parsed_result and not parsed_result.get("success"):
+                    # Container execution succeeded but equity addition failed
+                    return {
+                        "status": "error",
+                        "error": parsed_result.get("error", "Unknown equity addition error"),
+                        "message": f"Failed to add equity '{ticker}'",
+                        "execution_output": output,
+                        "instance_name": instance_name,
+                    }
+                else:
+                    # Fallback if JSON parsing fails but execution succeeded
+                    return {
+                        "status": "success",
+                        "ticker": ticker,
+                        "resolution": resolution,
+                        "message": f"Successfully added equity '{ticker}' with {resolution} resolution",
+                        "execution_output": output,
+                        "instance_name": instance_name,
+                    }
+                    
+            except json.JSONDecodeError as e:
+                return {
+                    "status": "error",
+                    "error": f"Failed to parse container result: {e}",
+                    "message": f"Container executed but result parsing failed",
+                    "execution_output": output,
+                    "instance_name": instance_name,
+                }
 
         except Exception as e:
             logger.error(f"Failed to add equity '{ticker}' in instance '{instance_name}': {e}")
@@ -231,86 +288,180 @@ print(f"Successfully added {{len([r for r in results if r['status'] == 'success'
         Returns:
             Dictionary containing historical data
         """
-        qb = get_quantbook_instance(instance_name)
-        if qb is None:
+        session = await get_quantbook_session(instance_name)
+        if session is None:
             return {
                 "status": "error",
                 "error": f"QuantBook instance '{instance_name}' not found",
+                "message": "Initialize a QuantBook instance first using initialize_quantbook",
             }
 
         try:
-            from QuantConnect import Resolution  # type: ignore
-            from datetime import datetime
-
-            # Parse dates
-            start = datetime.strptime(start_date, "%Y-%m-%d")
-            end = datetime.strptime(end_date, "%Y-%m-%d")
-
-            # Map resolution
-            resolution_map = {
-                "Minute": Resolution.Minute,
-                "Hour": Resolution.Hour,
-                "Daily": Resolution.Daily,
-            }
-
-            if resolution not in resolution_map:
+            # Validate resolution
+            valid_resolutions = ["Minute", "Hour", "Daily"]
+            if resolution not in valid_resolutions:
                 return {
                     "status": "error",
-                    "error": f"Invalid resolution '{resolution}'. Must be one of: {list(resolution_map.keys())}",
+                    "error": f"Invalid resolution '{resolution}'. Must be one of: {valid_resolutions}",
                 }
 
             # Handle single symbol vs multiple symbols
             if isinstance(symbols, str):
-                symbols = [symbols]
+                symbols_list = [symbols]
+            else:
+                symbols_list = symbols
 
-            # Get securities keys for the symbols
-            security_keys = []
-            for symbol in symbols:
-                # Find the security in qb.Securities
-                found = False
-                for sec_key in qb.Securities.Keys:
-                    if str(sec_key).upper() == symbol.upper():
-                        security_keys.append(sec_key)
-                        found = True
-                        break
-                if not found:
-                    return {
-                        "status": "error",
-                        "error": f"Symbol '{symbol}' not found in securities. Add it first using add_equity.",
-                    }
+            # Convert symbols list to Python code representation
+            symbols_str = str(symbols_list)
+            
+            # Build fields filter if specified
+            fields_filter = ""
+            if fields:
+                fields_str = str(fields)
+                fields_filter = f"""
+    # Filter specific fields if requested
+    if not history.empty:
+        available_fields = [col for col in history.columns if col in {fields_str}]
+        if available_fields:
+            history = history[available_fields]
+"""
 
-            # Get historical data
-            history = qb.History(security_keys, start, end, resolution_map[resolution])
+            # Execute code to get historical data in container
+            get_history_code = f"""
+from QuantConnect import Resolution
+from datetime import datetime
+import pandas as pd
 
-            if history.empty:
+# Map string resolution to enum
+resolution_map = {{
+    "Minute": Resolution.Minute,
+    "Hour": Resolution.Hour,
+    "Daily": Resolution.Daily,
+}}
+
+try:
+    # Parse dates
+    start_date = datetime.strptime("{start_date}", "%Y-%m-%d")
+    end_date = datetime.strptime("{end_date}", "%Y-%m-%d")
+    
+    symbols_list = {symbols_str}
+    resolution_val = resolution_map["{resolution}"]
+    
+    # Get historical data
+    history = qb.History(symbols_list, start_date, end_date, resolution_val)
+    
+    print(f"Retrieved history for {{symbols_list}}: {{len(history)}} data points")
+    
+    if history.empty:
+        print("No data found for the specified period")
+        result = {{
+            "status": "success",
+            "data": {{}},
+            "message": "No data found for the specified period",
+            "symbols": symbols_list,
+            "start_date": "{start_date}",
+            "end_date": "{end_date}",
+            "resolution": "{resolution}",
+            "shape": [0, 0]
+        }}
+    else:
+        {fields_filter}
+        
+        # Convert to JSON-serializable format
+        data = {{}}
+        for col in history.columns:
+            if col in ["open", "high", "low", "close", "volume"]:
+                if len(symbols_list) == 1:
+                    # Single symbol - simpler format
+                    data[col] = history[col].to_dict()
+                else:
+                    # Multiple symbols - unstack format
+                    data[col] = history[col].unstack(level=0).to_dict()
+        
+        result = {{
+            "status": "success",
+            "symbols": symbols_list,
+            "start_date": "{start_date}",
+            "end_date": "{end_date}",
+            "resolution": "{resolution}",
+            "data": data,
+            "shape": list(history.shape),
+        }}
+        
+        # Print result as JSON for MCP to parse
+        import json
+        print("=== QUANTBOOK_RESULT_START ===")
+        print(json.dumps(result, default=str))  # default=str handles datetime objects
+        print("=== QUANTBOOK_RESULT_END ===")
+    
+    print("Historical data retrieval completed successfully")
+    
+except Exception as e:
+    print(f"Error retrieving historical data: {{e}}")
+    result = {{
+        "status": "error",
+        "error": str(e),
+        "message": f"Failed to retrieve history for symbols: {symbols_str}",
+    }}
+    
+    # Print error result as JSON
+    import json
+    print("=== QUANTBOOK_RESULT_START ===")
+    print(json.dumps(result))
+    print("=== QUANTBOOK_RESULT_END ===")
+"""
+
+            execution_result = await session.execute(get_history_code)
+            
+            if execution_result["status"] != "success":
                 return {
-                    "status": "success",
-                    "data": {},
-                    "message": "No data found for the specified period",
+                    "status": "error",
+                    "error": execution_result.get("error", "Unknown error"),
+                    "message": f"Failed to retrieve history for symbols: {symbols}",
+                    "execution_output": execution_result.get("output", ""),
                 }
 
-            # Convert to dictionary format
-            if fields:
-                # Filter specific fields
-                available_fields = [col for col in history.columns if col in fields]
-                if available_fields:
-                    history = history[available_fields]
-
-            # Convert to JSON-serializable format
-            data = {}
-            for col in history.columns:
-                if col in ["open", "high", "low", "close", "volume"]:
-                    data[col] = history[col].unstack(level=0).to_dict()
-
-            return {
-                "status": "success",
-                "symbols": symbols,
-                "start_date": start_date,
-                "end_date": end_date,
-                "resolution": resolution,
-                "data": data,
-                "shape": list(history.shape),
-            }
+            # Parse the JSON result from container output
+            output = execution_result.get("output", "")
+            parsed_result = None
+            
+            try:
+                # Extract JSON result from container output
+                if "=== QUANTBOOK_RESULT_START ===" in output and "=== QUANTBOOK_RESULT_END ===" in output:
+                    start_marker = output.find("=== QUANTBOOK_RESULT_START ===")
+                    end_marker = output.find("=== QUANTBOOK_RESULT_END ===")
+                    if start_marker != -1 and end_marker != -1:
+                        json_start = start_marker + len("=== QUANTBOOK_RESULT_START ===\n")
+                        json_content = output[json_start:end_marker].strip()
+                        parsed_result = json.loads(json_content)
+                
+                if parsed_result:
+                    # Return the parsed result with additional metadata
+                    result = parsed_result.copy()
+                    result["execution_output"] = output
+                    result["instance_name"] = instance_name
+                    return result
+                else:
+                    # Fallback if JSON parsing fails
+                    return {
+                        "status": "success",
+                        "symbols": symbols,
+                        "start_date": start_date,
+                        "end_date": end_date,
+                        "resolution": resolution,
+                        "message": f"Successfully executed but no structured result found",
+                        "execution_output": output,
+                        "instance_name": instance_name,
+                    }
+                    
+            except json.JSONDecodeError as e:
+                return {
+                    "status": "error",
+                    "error": f"Failed to parse container result: {e}",
+                    "message": f"Container executed but result parsing failed",
+                    "execution_output": output,
+                    "instance_name": instance_name,
+                }
 
         except Exception as e:
             return {
@@ -334,45 +485,21 @@ print(f"Successfully added {{len([r for r in results if r['status'] == 'success'
         Returns:
             Dictionary containing alternative data subscription info
         """
-        qb = get_quantbook_instance(instance_name)
-        if qb is None:
+        session = await get_quantbook_session(instance_name)
+        if session is None:
             return {
                 "status": "error",
                 "error": f"QuantBook instance '{instance_name}' not found",
+                "message": "Initialize a QuantBook instance first using initialize_quantbook",
             }
 
         try:
-            # Map data types to QuantConnect classes
-            if data_type == "SmartInsiderTransaction":
-                from QuantConnect.DataSource import SmartInsiderTransaction  # type: ignore
-
-                # Find the symbol in securities
-                target_symbol = None
-                for sec_key in qb.Securities.Keys:
-                    if str(sec_key).upper() == symbol.upper():
-                        target_symbol = sec_key
-                        break
-
-                if target_symbol is None:
-                    return {
-                        "status": "error",
-                        "error": f"Symbol '{symbol}' not found. Add it as equity first.",
-                    }
-
-                alt_symbol = qb.AddData(SmartInsiderTransaction, target_symbol).Symbol
-
-                return {
-                    "status": "success",
-                    "data_type": data_type,
-                    "symbol": symbol,
-                    "alt_symbol": str(alt_symbol),
-                    "message": f"Successfully added {data_type} data for {symbol}",
-                }
-            else:
-                return {
-                    "status": "error",
-                    "error": f"Unsupported data type '{data_type}'. Currently supported: SmartInsiderTransaction",
-                }
+            # TODO: Convert to container execution like other functions
+            return {
+                "status": "error",
+                "error": "Alternative data functions need to be updated for container execution",
+                "message": f"add_alternative_data is temporarily disabled pending container execution update",
+            }
 
         except Exception as e:
             return {
@@ -402,64 +529,20 @@ print(f"Successfully added {{len([r for r in results if r['status'] == 'success'
         Returns:
             Dictionary containing alternative data history
         """
-        qb = get_quantbook_instance(instance_name)
-        if qb is None:
+        session = await get_quantbook_session(instance_name)
+        if session is None:
             return {
                 "status": "error",
                 "error": f"QuantBook instance '{instance_name}' not found",
+                "message": "Initialize a QuantBook instance first using initialize_quantbook",
             }
 
         try:
-            from datetime import datetime
-
-            start = datetime.strptime(start_date, "%Y-%m-%d")
-            end = datetime.strptime(end_date, "%Y-%m-%d")
-
-            if isinstance(symbols, str):
-                symbols = [symbols]
-
-            # Get alternative data symbols
-            alt_symbols = []
-            for symbol in symbols:
-                # Find alternative data symbols for this equity
-                for sec_key in qb.Securities.Keys:
-                    if (
-                        data_type.lower() in str(sec_key).lower()
-                        and symbol.upper() in str(sec_key).upper()
-                    ):
-                        alt_symbols.append(sec_key)
-
-            if not alt_symbols:
-                return {
-                    "status": "error",
-                    "error": f"No {data_type} data found for symbols {symbols}. Add alternative data first.",
-                }
-
-            # Get history
-            from QuantConnect import Resolution  # type: ignore
-
-            history = qb.History(alt_symbols, start, end, Resolution.Daily)
-
-            if history.empty:
-                return {
-                    "status": "success",
-                    "data": {},
-                    "message": "No alternative data found for the specified period",
-                }
-
-            # Convert to JSON format
-            data = {}
-            for col in history.columns:
-                data[col] = history[col].unstack(level=0).to_dict()
-
+            # TODO: Convert to container execution like other functions
             return {
-                "status": "success",
-                "data_type": data_type,
-                "symbols": symbols,
-                "start_date": start_date,
-                "end_date": end_date,
-                "data": data,
-                "shape": list(history.shape),
+                "status": "error",
+                "error": "Alternative data functions need to be updated for container execution",
+                "message": f"get_alternative_data_history is temporarily disabled pending container execution update",
             }
 
         except Exception as e:
