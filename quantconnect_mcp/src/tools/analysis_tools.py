@@ -5,7 +5,15 @@ from typing import Dict, Any, List, Optional, Union
 import pandas as pd
 import numpy as np
 import json
-from .quantbook_tools import get_quantbook_instance
+
+# Conditional import to avoid issues when Docker/QuantBook not available
+def get_quantbook_instance(instance_name: str = "default"):
+    """Get QuantBook instance - always returns None when quantbook unavailable."""
+    try:
+        from .quantbook_tools import get_quantbook_instance as _get_instance
+        return _get_instance(instance_name)
+    except ImportError:
+        return None
 
 
 def register_analysis_tools(mcp: FastMCP):

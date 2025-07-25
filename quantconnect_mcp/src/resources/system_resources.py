@@ -39,25 +39,31 @@ def register_system_resources(mcp: FastMCP):
     @mcp.resource("resource://quantconnect/server/status")
     async def server_status() -> Dict[str, Any]:
         """Get QuantConnect MCP server status and statistics."""
-        from ..tools.quantbook_tools import _quantbook_instances  # type: ignore
-
-        # Count active QuantBook instances
-        active_instances = len(_quantbook_instances)
-
-        # Get instance details
+        
+        # Try to get session manager status without causing import issues  
+        active_instances = 0
         instance_details = {}
-        for name, qb in _quantbook_instances.items():
-            try:
-                securities_count = (
-                    len(qb.Securities) if hasattr(qb, "Securities") else 0
-                )
-                instance_details[name] = {
-                    "type": str(type(qb).__name__),
-                    "securities_count": securities_count,
+        
+        try:
+            # Only try to import session manager if quantbook is available
+            from ..adapters.session_manager import get_session_manager
+            manager = get_session_manager()
+            sessions = manager.list_sessions()
+            active_instances = len(sessions)
+            
+            for session_info in sessions:
+                instance_details[session_info["session_id"]] = {
+                    "type": "ResearchSession", 
                     "status": "active",
+                    "created_at": session_info["created_at"],
+                    "workspace": session_info["workspace_dir"],
                 }
-            except Exception as e:
-                instance_details[name] = {"status": "error", "error": str(e)}
+        except ImportError:
+            # QuantBook functionality not available - that's okay
+            pass
+        except Exception as e:
+            # Other errors in session management
+            instance_details["error"] = str(e)
 
         return {
             "server_name": "QuantConnect MCP Server",
@@ -65,8 +71,9 @@ def register_system_resources(mcp: FastMCP):
             "active_quantbook_instances": active_instances,
             "instance_details": instance_details,
             "available_tools": [
-                "QuantBook Management",
-                "Data Retrieval",
+                "QuantConnect API",
+                "Project Management", 
+                "Backtesting",
                 "Statistical Analysis",
                 "Portfolio Optimization",
                 "Universe Selection",
