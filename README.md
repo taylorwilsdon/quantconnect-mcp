@@ -154,14 +154,6 @@ The server supports optional QuantBook functionality that runs research environm
 - Automatic notebook modification for code execution
 - Compatible with QuantConnect's standard research environment
 
-#### **Container Configuration**
-```bash
-# Container resource limits (optional)
-export QUANTBOOK_MEMORY_LIMIT="2g"      # Default: 2GB RAM
-export QUANTBOOK_CPU_LIMIT="1.0"        # Default: 1 CPU core
-export QUANTBOOK_SESSION_TIMEOUT="3600" # Default: 1 hour timeout
-```
-
 ### 5. **QuantBook Usage Notes**
 
 When using QuantBook functionality, keep these key points in mind:
