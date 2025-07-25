@@ -1,4 +1,22 @@
-"""QuantBook Management Tools for QuantConnect MCP Server (Container-Based)"""
+"""QuantBook Management Tools for QuantConnect MCP Server (Container-Based)
+
+CRITICAL FOR LLMs - HOW TO EXECUTE QUANTBOOK CODE:
+- DO NOT execute standalone Python scripts - qb won't be available!
+- INSTEAD: Modify the existing /LeanCLI/research.ipynb notebook file
+- qb is ONLY available in Jupyter notebooks with Foundation-Py-Default kernel
+
+CORRECT WORKFLOW for execute_quantbook_code:
+1. Read the existing /LeanCLI/research.ipynb file
+2. Add your code as a new cell to the notebook
+3. Execute the notebook to get results
+4. qb will be available automatically in the notebook
+
+ENVIRONMENT NOTES:
+- Research notebooks are located at /LeanCLI in the container
+- A default starter notebook 'research.ipynb' is automatically created
+- QuantBook is pre-initialized and available as 'qb' in all notebooks
+- When creating new notebooks, they MUST use the 'Foundation-Py-Default' kernel
+"""
 
 import asyncio
 from fastmcp import FastMCP
@@ -6,7 +24,12 @@ from typing import Dict, Any, List, Optional
 import json
 import logging
 
-from ..adapters import SessionManager, ResearchSession, get_session_manager, initialize_session_manager
+from ..adapters import (
+    SessionManager,
+    ResearchSession,
+    get_session_manager,
+    initialize_session_manager,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +48,11 @@ def register_quantbook_tools(mcp: FastMCP):
     ) -> Dict[str, Any]:
         """
         Initialize a new QuantBook instance in a Docker container for research operations.
+        
+        IMPORTANT: Research notebooks are located at /LeanCLI in the container.
+        - A default starter notebook 'research.ipynb' is automatically created
+        - QuantBook is pre-initialized and available as 'qb' in all notebooks
+        - When creating new notebooks, they MUST use the 'Foundation-Py-Default' kernel to have qb access
 
         Args:
             instance_name: Name identifier for this QuantBook instance
@@ -43,41 +71,51 @@ def register_quantbook_tools(mcp: FastMCP):
             manager = get_session_manager()
 
             # Create or get research session
+            # Note: lean-cli manages memory and CPU limits internally
             session = await manager.get_or_create_session(
                 session_id=instance_name,
-                memory_limit=memory_limit,
-                cpu_limit=cpu_limit,
-                timeout=timeout,
+                # Only pass supported parameters for lean-cli based session
+                port=None,  # Will use default or env var
             )
 
             # Initialize QuantBook in the container (like lean-cli)
             init_code = """
-# Import necessary modules
-import pandas as pd
-import numpy as np
-import sys
-import os
+                # Import necessary modules
+                import sys
+                import os
 
-# Set up LEAN environment
-sys.path.append('/Lean')
-
-try:
-    from QuantConnect.Research import QuantBook
-    from QuantConnect import *
-    
-    # Create global QuantBook instance
-    qb = QuantBook()
-    print(f"QuantBook initialized successfully in LEAN environment")
-    print(f"Available methods: {len([m for m in dir(qb) if not m.startswith('_')]):d}")
-    print(f"LEAN modules loaded: QuantConnect available")
-except ImportError as e:
-    print(f"Warning: LEAN modules not fully available: {e}")
-    print("Basic Python environment ready (pandas, numpy)")
-    qb = None
-"""
-
+                # Set up LEAN environment
+                sys.path.append('/Lean')
+                print("Started")
+                """
             result = await session.execute(init_code)
-            
+
+            # Check if container is still starting up
+            if result["status"] == "error" and "Container not found" in result.get(
+                "error", ""
+            ):
+                # Container might still be starting, but initialization is successful
+                return {
+                    "status": "success",
+                    "instance_name": instance_name,
+                    "session_id": session.session_id,
+                    "message": f"QuantBook instance '{instance_name}' is starting up. Jupyter Lab will be available at http://localhost:{session.port}",
+                    "container_info": {
+                        "memory_limit": memory_limit,
+                        "cpu_limit": cpu_limit,
+                        "timeout": timeout,
+                        "workspace": str(session.workspace_dir),
+                        "port": session.port,
+                    },
+                    "note": "Container is still starting. You can check the web interface or try executing code in a few seconds.",
+                    "usage_instructions": {
+                        "CRITICAL": "QuantBook (qb) is PRE-INITIALIZED in this environment!",
+                        "DO": "Use qb directly: equity = qb.AddEquity('AAPL')",
+                        "DO_NOT": "DO NOT import QuantBook or create qb = QuantBook()",
+                        "example": "# Just use qb directly!\nequity = qb.AddEquity('AAPL')\nhistory = qb.History(equity.Symbol, 10, Resolution.Daily)"
+                    }
+                }
+
             if result["status"] != "success":
                 return {
                     "status": "error",
@@ -95,12 +133,23 @@ except ImportError as e:
                     "cpu_limit": cpu_limit,
                     "timeout": timeout,
                     "workspace": str(session.workspace_dir),
+                    "port": session.port,
                 },
                 "output": result.get("output", ""),
+                "usage_instructions": {
+                    "CRITICAL": "QuantBook (qb) is PRE-INITIALIZED in this environment!",
+                    "DO": "Use qb directly: equity = qb.AddEquity('AAPL')",
+                    "DO_NOT": "DO NOT import QuantBook or create qb = QuantBook()",
+                    "example": "# Just use qb directly!\nequity = qb.AddEquity('AAPL')\nhistory = qb.History(equity.Symbol, 10, Resolution.Daily)",
+                    "notebook_location": "/LeanCLI - where research.ipynb is located",
+                    "kernel": "Use 'Foundation-Py-Default' kernel for new notebooks"
+                }
             }
 
         except Exception as e:
-            logger.error(f"Failed to initialize QuantBook instance '{instance_name}': {e}")
+            logger.error(
+                f"Failed to initialize QuantBook instance '{instance_name}': {e}"
+            )
             return {
                 "status": "error",
                 "error": str(e),
@@ -159,38 +208,58 @@ except ImportError as e:
 
             # Get QuantBook info from container
             info_code = """
-try:
-    # Get securities count
-    securities_count = len(qb.Securities) if hasattr(qb, 'Securities') else 0
-    
-    # Get available methods
-    available_methods = [method for method in dir(qb) if not method.startswith('_')]
-    
-    print(f"Securities count: {securities_count}")
-    print(f"Available methods: {len(available_methods)}")
-    print(f"QuantBook type: {type(qb).__name__}")
-    
-    # Store results for JSON return
-    qb_info = {
-        'securities_count': securities_count,
-        'available_methods': available_methods[:50],  # Limit to first 50 methods
-        'total_methods': len(available_methods),
-        'type': type(qb).__name__
-    }
-    
-except Exception as e:
-    print(f"Error getting QuantBook info: {e}")
-    qb_info = {
-        'error': str(e),
-        'securities_count': 0,
-        'available_methods': [],
-        'total_methods': 0,
-        'type': 'Unknown'
-    }
-"""
+            try:
+                # Get securities count
+                securities_count = len(qb.Securities) if hasattr(qb, 'Securities') else 0
+
+                # Get available methods
+                available_methods = [method for method in dir(qb) if not method.startswith('_')]
+
+                print(f"Securities count: {securities_count}")
+                print(f"Available methods: {len(available_methods)}")
+                print(f"QuantBook type: {type(qb).__name__}")
+
+                # Store results for JSON return
+                qb_info = {
+                    'securities_count': securities_count,
+                    'available_methods': available_methods[:50],  # Limit to first 50 methods
+                    'total_methods': len(available_methods),
+                    'type': type(qb).__name__
+                }
+
+            except Exception as e:
+                print(f"Error getting QuantBook info: {e}")
+                qb_info = {
+                    'error': str(e),
+                    'securities_count': 0,
+                    'available_methods': [],
+                    'total_methods': 0,
+                    'type': 'Unknown'
+                }
+            """
 
             result = await session.execute(info_code)
-            
+
+            # Handle case where container is still starting
+            if result["status"] == "error" and "Container not found" in result.get(
+                "error", ""
+            ):
+                return {
+                    "status": "success",
+                    "instance_name": instance_name,
+                    "session_id": session.session_id,
+                    "container_info": {
+                        "created_at": session.created_at.isoformat(),
+                        "last_used": session.last_used.isoformat(),
+                        "port": session.port,
+                        "workspace": str(session.workspace_dir),
+                        "initialized": session._initialized,
+                        "jupyter_url": f"http://localhost:{session.port}",
+                    },
+                    "message": "Container is still starting up. Jupyter Lab should be available soon.",
+                    "note": result.get("message", ""),
+                }
+
             return {
                 "status": "success",
                 "instance_name": instance_name,
@@ -198,19 +267,73 @@ except Exception as e:
                 "container_info": {
                     "created_at": session.created_at.isoformat(),
                     "last_used": session.last_used.isoformat(),
-                    "memory_limit": session.memory_limit,
-                    "cpu_limit": session.cpu_limit,
+                    "port": session.port,
                     "workspace": str(session.workspace_dir),
+                    "initialized": session._initialized,
                 },
                 "execution_result": result,
             }
 
         except Exception as e:
-            logger.error(f"Failed to get info for QuantBook instance '{instance_name}': {e}")
+            logger.error(
+                f"Failed to get info for QuantBook instance '{instance_name}': {e}"
+            )
             return {
                 "status": "error",
                 "error": str(e),
                 "message": f"Failed to get info for QuantBook instance '{instance_name}'",
+            }
+
+    @mcp.tool()
+    async def check_quantbook_container(
+        instance_name: str = "default",
+    ) -> Dict[str, Any]:
+        """
+        Check if the container for a QuantBook instance is running.
+
+        Args:
+            instance_name: Name of the QuantBook instance
+
+        Returns:
+            Dictionary containing container status
+        """
+        try:
+            manager = get_session_manager()
+            session = await manager.get_session(instance_name)
+
+            if session is None:
+                available_sessions = [s["session_id"] for s in manager.list_sessions()]
+                return {
+                    "status": "error",
+                    "error": f"QuantBook instance '{instance_name}' not found",
+                    "available_instances": available_sessions,
+                }
+
+            # Try to find the container
+            await session._find_container()
+
+            return {
+                "status": "success",
+                "instance_name": instance_name,
+                "container_found": session.container is not None,
+                "container_name": session.container.name if session.container else None,
+                "port": session.port,
+                "jupyter_url": f"http://localhost:{session.port}",
+                "message": (
+                    "Container is running"
+                    if session.container
+                    else "Container not yet found - may still be starting"
+                ),
+            }
+
+        except Exception as e:
+            logger.error(
+                f"Failed to check container for instance '{instance_name}': {e}"
+            )
+            return {
+                "status": "error",
+                "error": str(e),
+                "message": f"Failed to check container for instance '{instance_name}'",
             }
 
     @mcp.tool()
@@ -258,10 +381,27 @@ except Exception as e:
         timeout: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
-        Execute arbitrary Python code in a QuantBook container.
+        Execute Python code in a QuantBook container.
+        
+        IMPORTANT: This function should modify and execute code in /LeanCLI/research.ipynb
+        
+        The LLM should:
+        1. Read the existing /LeanCLI/research.ipynb file
+        2. Add the code as a new cell to the notebook
+        3. Execute the notebook cell
+        4. Return the results
+        
+        QuantBook (qb) is ONLY available inside Jupyter notebooks with Foundation-Py-Default kernel!
+        DO NOT try to execute standalone Python scripts - they won't have access to qb.
+        
+        Example workflow:
+        1. Read /LeanCLI/research.ipynb
+        2. Add cell with: equity = qb.AddEquity("AAPL")
+        3. Execute the notebook
+        4. Return results
 
         Args:
-            code: Python code to execute
+            code: Python code to add to research.ipynb and execute
             instance_name: Name of the QuantBook instance
             timeout: Execution timeout in seconds (uses session default if None)
 
@@ -288,7 +428,9 @@ except Exception as e:
             return result
 
         except Exception as e:
-            logger.error(f"Failed to execute code in QuantBook instance '{instance_name}': {e}")
+            logger.error(
+                f"Failed to execute code in QuantBook instance '{instance_name}': {e}"
+            )
             return {
                 "status": "error",
                 "error": str(e),
@@ -316,7 +458,8 @@ except Exception as e:
                 "sessions": sessions,
                 "configuration": {
                     "max_sessions": manager.max_sessions,
-                    "session_timeout_hours": manager.session_timeout.total_seconds() / 3600,
+                    "session_timeout_hours": manager.session_timeout.total_seconds()
+                    / 3600,
                     "cleanup_interval_seconds": manager.cleanup_interval,
                 },
             }
@@ -329,13 +472,15 @@ except Exception as e:
             }
 
 
-async def get_quantbook_session(instance_name: str = "default") -> Optional[ResearchSession]:
+async def get_quantbook_session(
+    instance_name: str = "default",
+) -> Optional[ResearchSession]:
     """
     Helper function to get QuantBook session for other tools.
-    
+
     Args:
         instance_name: Name of the QuantBook instance
-        
+
     Returns:
         ResearchSession instance or None if not found
     """
@@ -351,9 +496,11 @@ def get_quantbook_instance(instance_name: str = "default"):
     """
     Legacy compatibility function for get_quantbook_instance.
     Returns None since the old synchronous API is no longer supported.
-    
+
     This function exists to prevent import errors but will return None,
     causing tools that depend on it to fail gracefully.
     """
-    logger.warning(f"get_quantbook_instance is deprecated and no longer functional. Use get_quantbook_session instead.")
+    logger.warning(
+        f"get_quantbook_instance is deprecated and no longer functional. Use get_quantbook_session instead."
+    )
     return None

@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-from .research_session import ResearchSession, ResearchSessionError
+from .research_session_lean_cli import ResearchSession, ResearchSessionError
 
 logger = logging.getLogger(__name__)
 
@@ -168,11 +168,10 @@ class SessionManager:
             {
                 "session_id": session.session_id,
                 "created_at": session.created_at.isoformat(),
-                "last_used": session.last_used.isoformat(),
+                "last_used": getattr(session, 'last_used', session.created_at).isoformat(),
                 "initialized": session._initialized,
                 "workspace_dir": str(session.workspace_dir),
-                "memory_limit": session.memory_limit,
-                "cpu_limit": session.cpu_limit,
+                "port": getattr(session, 'port', 8888),
             }
             for session in self._sessions.values()
         ]

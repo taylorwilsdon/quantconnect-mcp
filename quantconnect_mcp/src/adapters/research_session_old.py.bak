@@ -5,8 +5,10 @@ import hashlib
 import json
 import logging
 import os
+import shutil
 import tempfile
 import uuid
+import zipfile
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -14,6 +16,7 @@ from typing import Any, Dict, List, Optional, Union
 import docker
 import docker.types
 import pandas as pd
+import requests
 from docker.models.containers import Container
 from docker.types import Mount
 
@@ -103,6 +106,125 @@ class ResearchSession:
         
         logger.info(f"Created research session {self.session_id} (port: {self.port})")
     
+    async def _download_lean_repository(self) -> None:
+        """Download and extract the Lean repository for config and data files."""
+        logger.info("Downloading latest Lean repository for configuration and data...")
+        
+        try:
+            # Download the Lean repository master branch
+            response = await asyncio.to_thread(
+                requests.get,
+                "https://github.com/QuantConnect/Lean/archive/master.zip",
+                stream=True,
+                timeout=60
+            )
+            response.raise_for_status()
+            
+            # Save to temporary file
+            zip_path = self.temp_config_dir / "lean-master.zip"
+            with open(zip_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            
+            # Extract the zip file
+            extract_dir = self.temp_config_dir / "lean-extract"
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(extract_dir)
+            
+            # Copy the config file
+            source_config = extract_dir / "Lean-master" / "Launcher" / "config.json"
+            if source_config.exists():
+                # Read and clean the config (like lean-cli does)
+                config_content = source_config.read_text(encoding="utf-8")
+                lean_config = self._parse_json_with_comments(config_content)
+                
+                # Update config with research-specific settings
+                lean_config["environment"] = "backtesting"
+                lean_config["algorithm-type-name"] = "QuantBookResearch"
+                lean_config["algorithm-language"] = "Python"
+                lean_config["algorithm-location"] = "/Notebooks/research.ipynb"
+                lean_config["research-object-store-name"] = self.session_id
+                lean_config["job-organization-id"] = os.environ.get("QUANTCONNECT_ORGANIZATION_ID", "0")
+                lean_config["job-user-id"] = os.environ.get("QUANTCONNECT_USER_ID", "0")
+                lean_config["api-access-token"] = os.environ.get("QUANTCONNECT_API_TOKEN", "")
+                lean_config["composer-dll-directory"] = "/Lean"
+                lean_config["results-destination-folder"] = "/tmp"
+                lean_config["object-store-name"] = self.session_id
+                lean_config["data-folder"] = "/Lean/Data"
+                
+                # No real limit for the object store by default
+                lean_config["storage-limit-mb"] = "9999999"
+                lean_config["storage-file-count"] = "9999999"
+                
+                # Save the cleaned config
+                config_path = self.temp_config_dir / "config.json"
+                with open(config_path, "w") as f:
+                    json.dump(lean_config, f, indent=2)
+                
+                logger.info("Lean configuration downloaded and prepared")
+            else:
+                raise ResearchSessionError("Could not find Launcher/config.json in Lean repository")
+            
+            # Copy the Data directory
+            source_data = extract_dir / "Lean-master" / "Data"
+            if source_data.exists() and source_data.is_dir():
+                # Copy essential data files (market hours, symbol properties, etc.)
+                essential_dirs = ["market-hours", "symbol-properties", "equity/usa/map_files"]
+                for dir_name in essential_dirs:
+                    source_dir = source_data / dir_name
+                    if source_dir.exists():
+                        dest_dir = self.data_dir / dir_name
+                        dest_dir.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copytree(source_dir, dest_dir, dirs_exist_ok=True)
+                        logger.info(f"Copied data directory: {dir_name}")
+                
+                logger.info("Essential data files downloaded")
+            else:
+                logger.warning("Could not find Data directory in Lean repository")
+            
+            # Clean up
+            zip_path.unlink(missing_ok=True)
+            shutil.rmtree(extract_dir, ignore_errors=True)
+            
+        except Exception as e:
+            logger.error(f"Failed to download Lean repository: {e}")
+            raise ResearchSessionError(f"Failed to download Lean repository: {e}")
+    
+    def _parse_json_with_comments(self, content: str) -> Dict[str, Any]:
+        """Parse JSON content that may contain comments."""
+        try:
+            import re
+            # Remove multi-line and single-line comments
+            content = re.sub(r'/\*.*?\*/|//[^\r\n"]*[\r\n]', '', content, flags=re.DOTALL)
+            
+            # Handle single line comments with double quotes
+            lines = []
+            for line in content.split('\n'):
+                double_quotes_count = 0
+                previous_char = ''
+                cleaned_line = ''
+                i = 0
+                while i < len(line):
+                    current_char = line[i]
+                    if current_char == '/' and i + 1 < len(line) and line[i + 1] == '/' and double_quotes_count % 2 == 0:
+                        # Found comment start outside quotes
+                        break
+                    else:
+                        if current_char == '"' and previous_char != '\\':
+                            double_quotes_count += 1
+                        cleaned_line += current_char
+                    previous_char = current_char
+                    i += 1
+                lines.append(cleaned_line)
+            
+            cleaned_content = '\n'.join(lines)
+            return json.loads(cleaned_content)
+        except Exception as e:
+            logger.error(f"Failed to parse JSON with comments: {e}")
+            # Fallback to simple JSON parsing
+            return json.loads(content)
+    
     async def initialize(self) -> None:
         """Initialize the Docker container."""
         if self._initialized:
@@ -116,21 +238,13 @@ class ResearchSession:
                 logger.info(f"Pulling image {self.IMAGE}...")
                 self.client.images.pull(self.IMAGE)
             
-            # Create the Lean config file from template
-            template_path = Path(__file__).parent / "lean_config_template.json"
-            with open(template_path, "r") as f:
-                lean_config = json.load(f)
+            # Download and extract Lean repository for config and data (like lean-cli does)
+            await self._download_lean_repository()
             
-            # Update config with research-specific settings
-            lean_config["research-object-store-name"] = self.session_id
-            lean_config["job-organization-id"] = os.environ.get("QUANTCONNECT_ORGANIZATION_ID", "0")
-            lean_config["job-user-id"] = os.environ.get("QUANTCONNECT_USER_ID", "0")
-            lean_config["api-access-token"] = os.environ.get("QUANTCONNECT_API_TOKEN", "")
-            
-            # Save config to temp directory
+            # Load the full Lean config from the downloaded repository
             config_path = self.temp_config_dir / "config.json"
-            with open(config_path, "w") as f:
-                json.dump(lean_config, f, indent=2)
+            if not config_path.exists():
+                raise ResearchSessionError("Failed to download Lean configuration")
             
             # Create a default research notebook if none exists
             default_notebook = self.notebooks_dir / "research.ipynb"

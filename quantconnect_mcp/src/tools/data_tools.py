@@ -48,54 +48,54 @@ def register_data_tools(mcp: FastMCP):
 
             # Execute code to add equity in container
             add_equity_code = f"""
-from QuantConnect import Resolution
+            from QuantConnect import Resolution
 
-# Map string resolution to enum
-resolution_map = {{
-    "Minute": Resolution.Minute,
-    "Hour": Resolution.Hour,
-    "Daily": Resolution.Daily,
-}}
+            # Map string resolution to enum
+            resolution_map = {{
+                "Minute": Resolution.Minute,
+                "Hour": Resolution.Hour,
+                "Daily": Resolution.Daily,
+            }}
 
-try:
-    # Add equity to QuantBook
-    security = qb.AddEquity("{ticker}", resolution_map["{resolution}"])
-    symbol = str(security.Symbol)
-    
-    print(f"Successfully added equity '{ticker}' with {resolution} resolution")
-    print(f"Symbol: {{symbol}}")
-    
-    # Store result for return
-    result = {{
-        "ticker": "{ticker}",
-        "symbol": symbol,
-        "resolution": "{resolution}",
-        "success": True
-    }}
-    
-    # Print result as JSON for MCP to parse
-    import json
-    print("=== QUANTBOOK_RESULT_START ===")
-    print(json.dumps(result))
-    print("=== QUANTBOOK_RESULT_END ===")
-    
-except Exception as e:
-    print(f"Failed to add equity '{ticker}': {{e}}")
-    result = {{
-        "ticker": "{ticker}",
-        "error": str(e),
-        "success": False
-    }}
-    
-    # Print error result as JSON
-    import json
-    print("=== QUANTBOOK_RESULT_START ===")
-    print(json.dumps(result))
-    print("=== QUANTBOOK_RESULT_END ===")
-"""
+            try:
+                # Add equity to QuantBook
+                security = qb.AddEquity("{ticker}", resolution_map["{resolution}"])
+                symbol = str(security.Symbol)
+
+                print(f"Successfully added equity '{ticker}' with {resolution} resolution")
+                print(f"Symbol: {{symbol}}")
+
+                # Store result for return
+                result = {{
+                    "ticker": "{ticker}",
+                    "symbol": symbol,
+                    "resolution": "{resolution}",
+                    "success": True
+                }}
+
+                # Print result as JSON for MCP to parse
+                import json
+                print("=== QUANTBOOK_RESULT_START ===")
+                print(json.dumps(result))
+                print("=== QUANTBOOK_RESULT_END ===")
+
+            except Exception as e:
+                print(f"Failed to add equity '{ticker}': {{e}}")
+                result = {{
+                    "ticker": "{ticker}",
+                    "error": str(e),
+                    "success": False
+                }}
+
+                # Print error result as JSON
+                import json
+                print("=== QUANTBOOK_RESULT_START ===")
+                print(json.dumps(result))
+                print("=== QUANTBOOK_RESULT_END ===")
+            """
 
             execution_result = await session.execute(add_equity_code)
-            
+
             if execution_result["status"] != "success":
                 return {
                     "status": "error",
@@ -107,7 +107,7 @@ except Exception as e:
             # Parse the JSON result from container output
             output = execution_result.get("output", "")
             parsed_result = None
-            
+
             try:
                 # Extract JSON result from container output
                 if "=== QUANTBOOK_RESULT_START ===" in output and "=== QUANTBOOK_RESULT_END ===" in output:
@@ -117,7 +117,7 @@ except Exception as e:
                         json_start = start_marker + len("=== QUANTBOOK_RESULT_START ===\n")
                         json_content = output[json_start:end_marker].strip()
                         parsed_result = json.loads(json_content)
-                
+
                 if parsed_result and parsed_result.get("success"):
                     # Return successful result with parsed data
                     return {
@@ -148,7 +148,7 @@ except Exception as e:
                         "execution_output": output,
                         "instance_name": instance_name,
                     }
-                    
+
             except json.JSONDecodeError as e:
                 return {
                     "status": "error",
@@ -203,44 +203,44 @@ except Exception as e:
 
             # Execute code to add multiple equities in container
             add_multiple_code = f"""
-from QuantConnect import Resolution
+            from QuantConnect import Resolution
 
-# Map string resolution to enum
-resolution_map = {{
-    "Minute": Resolution.Minute,
-    "Hour": Resolution.Hour,
-    "Daily": Resolution.Daily,
-}}
+            # Map string resolution to enum
+            resolution_map = {{
+                "Minute": Resolution.Minute,
+                "Hour": Resolution.Hour,
+                "Daily": Resolution.Daily,
+            }}
 
-tickers = {tickers_str}
-resolution = "{resolution}"
-results = []
-symbols = {{}}
+            tickers = {tickers_str}
+            resolution = "{resolution}"
+            results = []
+            symbols = {{}}
 
-for ticker in tickers:
-    try:
-        security = qb.AddEquity(ticker, resolution_map[resolution])
-        symbol = str(security.Symbol)
-        symbols[ticker] = symbol
-        results.append({{
-            "ticker": ticker,
-            "symbol": symbol,
-            "status": "success"
-        }})
-        print(f"Added equity {{ticker}} with symbol {{symbol}}")
-    except Exception as e:
-        results.append({{
-            "ticker": ticker,
-            "status": "error",
-            "error": str(e)
-        }})
-        print(f"Failed to add equity {{ticker}}: {{e}}")
+            for ticker in tickers:
+                try:
+                    security = qb.AddEquity(ticker, resolution_map[resolution])
+                    symbol = str(security.Symbol)
+                    symbols[ticker] = symbol
+                    results.append({{
+                        "ticker": ticker,
+                        "symbol": symbol,
+                        "status": "success"
+                    }})
+                    print(f"Added equity {{ticker}} with symbol {{symbol}}")
+                except Exception as e:
+                    results.append({{
+                        "ticker": ticker,
+                        "status": "error",
+                        "error": str(e)
+                    }})
+                    print(f"Failed to add equity {{ticker}}: {{e}}")
 
-print(f"Successfully added {{len([r for r in results if r['status'] == 'success'])}} out of {{len(tickers)}} equities")
-"""
+            print(f"Successfully added {{len([r for r in results if r['status'] == 'success'])}} out of {{len(tickers)}} equities")
+            """
 
             execution_result = await session.execute(add_multiple_code)
-            
+
             if execution_result["status"] != "success":
                 return {
                     "status": "error",
@@ -313,7 +313,7 @@ print(f"Successfully added {{len([r for r in results if r['status'] == 'success'
 
             # Convert symbols list to Python code representation
             symbols_str = str(symbols_list)
-            
+
             # Build fields filter if specified
             fields_filter = ""
             if fields:
@@ -343,15 +343,15 @@ try:
     # Parse dates
     start_date = datetime.strptime("{start_date}", "%Y-%m-%d")
     end_date = datetime.strptime("{end_date}", "%Y-%m-%d")
-    
+
     symbols_list = {symbols_str}
     resolution_val = resolution_map["{resolution}"]
-    
+
     # Get historical data
     history = qb.History(symbols_list, start_date, end_date, resolution_val)
-    
+
     print(f"Retrieved history for {{symbols_list}}: {{len(history)}} data points")
-    
+
     if history.empty:
         print("No data found for the specified period")
         result = {{
@@ -366,7 +366,7 @@ try:
         }}
     else:
         {fields_filter}
-        
+
         # Convert to JSON-serializable format
         data = {{}}
         for col in history.columns:
@@ -377,7 +377,7 @@ try:
                 else:
                     # Multiple symbols - unstack format
                     data[col] = history[col].unstack(level=0).to_dict()
-        
+
         result = {{
             "status": "success",
             "symbols": symbols_list,
@@ -387,15 +387,15 @@ try:
             "data": data,
             "shape": list(history.shape),
         }}
-        
+
         # Print result as JSON for MCP to parse
         import json
         print("=== QUANTBOOK_RESULT_START ===")
         print(json.dumps(result, default=str))  # default=str handles datetime objects
         print("=== QUANTBOOK_RESULT_END ===")
-    
+
     print("Historical data retrieval completed successfully")
-    
+
 except Exception as e:
     print(f"Error retrieving historical data: {{e}}")
     result = {{
@@ -403,7 +403,7 @@ except Exception as e:
         "error": str(e),
         "message": f"Failed to retrieve history for symbols: {symbols_str}",
     }}
-    
+
     # Print error result as JSON
     import json
     print("=== QUANTBOOK_RESULT_START ===")
@@ -412,7 +412,7 @@ except Exception as e:
 """
 
             execution_result = await session.execute(get_history_code)
-            
+
             if execution_result["status"] != "success":
                 return {
                     "status": "error",
@@ -424,7 +424,7 @@ except Exception as e:
             # Parse the JSON result from container output
             output = execution_result.get("output", "")
             parsed_result = None
-            
+
             try:
                 # Extract JSON result from container output
                 if "=== QUANTBOOK_RESULT_START ===" in output and "=== QUANTBOOK_RESULT_END ===" in output:
@@ -434,7 +434,7 @@ except Exception as e:
                         json_start = start_marker + len("=== QUANTBOOK_RESULT_START ===\n")
                         json_content = output[json_start:end_marker].strip()
                         parsed_result = json.loads(json_content)
-                
+
                 if parsed_result:
                     # Return the parsed result with additional metadata
                     result = parsed_result.copy()
@@ -453,7 +453,7 @@ except Exception as e:
                         "execution_output": output,
                         "instance_name": instance_name,
                     }
-                    
+
             except json.JSONDecodeError as e:
                 return {
                     "status": "error",
