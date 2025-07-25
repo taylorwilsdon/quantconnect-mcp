@@ -84,8 +84,9 @@ pip install quantconnect-mcp
 uv pip install "quantconnect-mcp[quantbook]"
 pip install "quantconnect-mcp[quantbook]"
 
-# Requires Docker to be installed and running
+# Requires Docker and lean-cli to be installed
 docker --version  # Ensure Docker is available
+pip install lean    # Install QuantConnect lean-cli
 ```
 
 
@@ -132,24 +133,26 @@ uvx quantconnect-mcp
 
 ### 4. **QuantBook Container Functionality (Optional)**
 
-The server supports optional QuantBook functionality that runs research environments in secure Docker containers. This provides:
+The server supports optional QuantBook functionality that runs research environments using lean-cli managed Docker containers. This provides:
 
-- **🐳 Containerized Execution**: Each QuantBook instance runs in an isolated Docker container
-- **🔒 Enhanced Security**: Non-root users, capability dropping, resource limits
+- **🐳 lean-cli Integration**: Uses official QuantConnect lean-cli for container management
+- **📔 Jupyter Notebook Environment**: Code executes in `/LeanCLI/research.ipynb` with pre-initialized `qb`
+- **🔒 Enhanced Security**: Isolated containers with resource limits
 - **⚡ Scalable Sessions**: Multiple concurrent research sessions with automatic cleanup
 - **📊 Interactive Analysis**: Execute Python code with full QuantConnect research libraries
 
 #### **Requirements**
 - Docker installed and running
+- lean-cli installed: `pip install lean`
 - Install with QuantBook support: `pip install "quantconnect-mcp[quantbook]"`
 - Set environment variable: `ENABLE_QUANTBOOK=true`
 
-#### **Security Features**
-- Containers run as non-root users (1000:1000)
-- Network isolation (no external network access)
-- Resource limits (configurable memory and CPU)
-- Automatic session timeout and cleanup
-- Code execution monitoring and logging
+#### **Key Features**
+- QuantBook (`qb`) is pre-initialized in Jupyter notebooks
+- Research notebooks located at `/LeanCLI/research.ipynb`
+- New notebooks must use the `Foundation-Py-Default` kernel for qb access
+- Automatic notebook modification for code execution
+- Compatible with QuantConnect's standard research environment
 
 #### **Container Configuration**
 ```bash
@@ -159,7 +162,16 @@ export QUANTBOOK_CPU_LIMIT="1.0"        # Default: 1 CPU core
 export QUANTBOOK_SESSION_TIMEOUT="3600" # Default: 1 hour timeout
 ```
 
-### 5. **Interact with Natural Language**
+### 5. **QuantBook Usage Notes**
+
+When using QuantBook functionality, keep these key points in mind:
+
+#### **📔 Notebook-Based Execution**
+- All QuantBook code executes by modifying `/LeanCLI/research.ipynb`
+- `qb` (QuantBook instance) is **pre-initialized** and ready to use
+- The LLM should not try to import or create QuantBook - just use `qb` directly, it's not available outside this environment
+
+### 6. **Interact with Natural Language**
 
 Instead of calling tools programmatically, you use natural language with a connected AI client (like Claude, a GPT, or any other MCP-compatible interface).
 
@@ -294,18 +306,18 @@ This MCP server is designed to be used with natural language. Below are examples
 | `list_quantbook_instances` | View all active container instances | - |
 | `get_quantbook_info` | Get container instance details | `instance_name` |
 | `remove_quantbook_instance` | Clean up container instance | `instance_name` |
-| `execute_quantbook_code` | Execute Python code in container | `code`, `instance_name`, `timeout` |
+| `execute_quantbook_code` | Execute Python code via notebook modification | `code`, `instance_name`, `timeout` |
 | `get_session_manager_status` | Get container session manager status | - |
 
 ### ◆ Data Retrieval Tools (Optional - Requires ENABLE_QUANTBOOK=true)
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `add_equity` | Add single equity security to container | `ticker`, `resolution`, `instance_name` |
-| `add_multiple_equities` | Add multiple securities to container | `tickers`, `resolution`, `instance_name` |
-| `get_history` | Get historical price data in container | `symbols`, `start_date`, `end_date`, `resolution` |
-| `add_alternative_data` | Subscribe to alt data in container | `data_type`, `symbol`, `instance_name` |
-| `get_alternative_data_history` | Get alt data history in container | `data_type`, `symbols`, `start_date`, `end_date` |
+| `add_equity` | Add single equity security via notebook | `ticker`, `resolution`, `instance_name` |
+| `add_multiple_equities` | Add multiple securities via notebook | `tickers`, `resolution`, `instance_name` |
+| `get_history` | Get historical price data via notebook | `symbols`, `start_date`, `end_date`, `resolution` |
+| `add_alternative_data` | Subscribe to alt data via notebook | `data_type`, `symbol`, `instance_name` |
+| `get_alternative_data_history` | Get alt data history via notebook | `data_type`, `symbols`, `start_date`, `end_date` |
 
 ### ◆ Statistical Analysis Tools
 
