@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 import tempfile
 import uuid
 from datetime import datetime, timedelta
@@ -14,6 +15,7 @@ import docker
 import docker.types
 import pandas as pd
 from docker.models.containers import Container
+from docker.types import Mount
 
 from .logging_config import get_container_logger, security_logger
 
@@ -33,9 +35,10 @@ class ResearchSession:
     and provides methods to execute code and exchange data.
     """
     
-    IMAGE = "quantconnect/research:latest"  # Use DEFAULT_RESEARCH_IMAGE from lean constants
+    IMAGE = "quantconnect/research:latest"  # Use research image as intended
     CONTAINER_WORKSPACE = "/Lean"  # Match LEAN_ROOT_PATH
     NOTEBOOKS_PATH = "/Lean/Notebooks"
+    DATA_PATH = "/Lean/Data"
     TIMEOUT_DEFAULT = 300  # 5 minutes
     
     def __init__(
@@ -45,6 +48,7 @@ class ResearchSession:
         memory_limit: str = "2g",
         cpu_limit: float = 1.0,
         timeout: int = TIMEOUT_DEFAULT,
+        port: Optional[int] = None,
     ):
         """
         Initialize a new research session.
@@ -55,6 +59,7 @@ class ResearchSession:
             memory_limit: Container memory limit (e.g., "2g", "512m")
             cpu_limit: Container CPU limit (fraction of CPU)
             timeout: Default execution timeout in seconds
+            port: Local port to expose Jupyter Lab on (default: env var QUANTBOOK_DOCKER_PORT or 8888)
         """
         self.session_id = session_id or f"qb_{uuid.uuid4().hex[:8]}"
         self.memory_limit = memory_limit
@@ -62,6 +67,13 @@ class ResearchSession:
         self.timeout = timeout
         self.created_at = datetime.utcnow()
         self.last_used = self.created_at
+        
+        # Get port from parameter, env var, or default
+        import os
+        if port is not None:
+            self.port = port
+        else:
+            self.port = int(os.environ.get("QUANTBOOK_DOCKER_PORT", "8888"))
         
         # Setup workspace
         if workspace_dir:
@@ -72,12 +84,24 @@ class ResearchSession:
             self._temp_dir = tempfile.TemporaryDirectory(prefix=f"qc_research_{self.session_id}_")
             self.workspace_dir = Path(self._temp_dir.name)
         
+        # Create necessary directories
+        self.notebooks_dir = self.workspace_dir / "Notebooks"
+        self.notebooks_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create data directory structure (minimal for research)
+        self.data_dir = self.workspace_dir / "Data"
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create temp directory for configs
+        self.temp_config_dir = self.workspace_dir / "temp"
+        self.temp_config_dir.mkdir(parents=True, exist_ok=True)
+        
         # Docker client and container
         self.client = docker.from_env()
         self.container: Optional[Container] = None
         self._initialized = False
         
-        logger.info(f"Created research session {self.session_id}")
+        logger.info(f"Created research session {self.session_id} (port: {self.port})")
     
     async def initialize(self) -> None:
         """Initialize the Docker container."""
@@ -92,14 +116,85 @@ class ResearchSession:
                 logger.info(f"Pulling image {self.IMAGE}...")
                 self.client.images.pull(self.IMAGE)
             
-            # Start container with proper LEAN research environment
-            # Use similar approach to lean-cli research command
-            volumes = {
-                str(self.workspace_dir): {
-                    "bind": self.NOTEBOOKS_PATH,
-                    "mode": "rw"
+            # Create the Lean config file from template
+            template_path = Path(__file__).parent / "lean_config_template.json"
+            with open(template_path, "r") as f:
+                lean_config = json.load(f)
+            
+            # Update config with research-specific settings
+            lean_config["research-object-store-name"] = self.session_id
+            lean_config["job-organization-id"] = os.environ.get("QUANTCONNECT_ORGANIZATION_ID", "0")
+            lean_config["job-user-id"] = os.environ.get("QUANTCONNECT_USER_ID", "0")
+            lean_config["api-access-token"] = os.environ.get("QUANTCONNECT_API_TOKEN", "")
+            
+            # Save config to temp directory
+            config_path = self.temp_config_dir / "config.json"
+            with open(config_path, "w") as f:
+                json.dump(lean_config, f, indent=2)
+            
+            # Create a default research notebook if none exists
+            default_notebook = self.notebooks_dir / "research.ipynb"
+            if not default_notebook.exists():
+                notebook_content = {
+                    "cells": [
+                        {
+                            "cell_type": "markdown",
+                            "metadata": {},
+                            "source": ["# QuantConnect Research Environment\n", 
+                                      "Welcome to the QuantConnect Research Environment. ",
+                                      "Here you can perform historical research using the QuantBook API."]
+                        },
+                        {
+                            "cell_type": "code",
+                            "metadata": {},
+                            "source": ["# QuantBook is automatically available as 'qb'\n",
+                                      "# Documentation: https://www.quantconnect.com/docs/v2/research-environment"]
+                        }
+                    ],
+                    "metadata": {
+                        "kernelspec": {
+                            "display_name": "Python 3",
+                            "language": "python",
+                            "name": "python3"
+                        }
+                    },
+                    "nbformat": 4,
+                    "nbformat_minor": 4
                 }
-            }
+                with open(default_notebook, "w") as f:
+                    json.dump(notebook_content, f, indent=2)
+            
+            # Set up mounts exactly like LEAN CLI
+            mounts = [
+                # Mount notebooks directory
+                Mount(
+                    target=self.NOTEBOOKS_PATH,
+                    source=str(self.notebooks_dir),
+                    type="bind",
+                    read_only=False
+                ),
+                # Mount data directory (even if minimal)
+                Mount(
+                    target=self.DATA_PATH,
+                    source=str(self.data_dir),
+                    type="bind",
+                    read_only=True
+                ),
+                # Mount config in root
+                Mount(
+                    target="/Lean/config.json",
+                    source=str(config_path),
+                    type="bind",
+                    read_only=True
+                ),
+                # Also mount config in notebooks directory (like LEAN CLI)
+                Mount(
+                    target=f"{self.NOTEBOOKS_PATH}/config.json",
+                    source=str(config_path),
+                    type="bind",
+                    read_only=True
+                )
+            ]
             
             # Add environment variables like lean-cli does
             environment = {
@@ -108,14 +203,58 @@ class ResearchSession:
                 "PYTHONPATH": "/Lean"
             }
             
-            # Create container with simplified configuration to ensure it starts
+            # Create the startup script similar to LEAN CLI
+            shell_script_commands = [
+                "#!/usr/bin/env bash",
+                "set -e",
+                # Setup Jupyter config
+                "mkdir -p ~/.jupyter",
+                'echo "c.ServerApp.disable_check_xsrf = True\nc.ServerApp.tornado_settings = {\'headers\': {\'Content-Security-Policy\': \'frame-ancestors self *\'}}" > ~/.jupyter/jupyter_server_config.py',
+                "mkdir -p ~/.ipython/profile_default/static/custom",
+                'echo "#header-container { display: none !important; }" > ~/.ipython/profile_default/static/custom/custom.css',
+                # Start the research environment (look for start.sh or similar)
+                "if [ -f /start.sh ]; then",
+                "    echo 'Starting research environment with /start.sh'",
+                "    exec /start.sh",
+                "elif [ -f /opt/miniconda3/bin/jupyter ]; then",
+                "    echo 'Starting Jupyter Lab directly'",
+                "    cd /Lean/Notebooks",
+                "    exec jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password='' --NotebookApp.allow_origin='*'",
+                "else",
+                "    echo 'No Jupyter found, keeping container alive'",
+                "    exec sleep infinity",
+                "fi"
+            ]
+            
+            # Write the startup script to a temporary file
+            if self._temp_dir:
+                startup_script_path = Path(self._temp_dir.name) / "lean-cli-start.sh"
+            else:
+                startup_script_path = self.workspace_dir / "lean-cli-start.sh"
+            
+            startup_script_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(startup_script_path, "w", encoding="utf-8", newline="\n") as file:
+                file.write("\n".join(shell_script_commands) + "\n")
+            
+            # Make the script executable
+            os.chmod(startup_script_path, 0o755)
+            
+            # Add the startup script mount
+            mounts.append(Mount(
+                target="/lean-cli-start.sh",
+                source=str(startup_script_path),
+                type="bind",
+                read_only=True
+            ))
+            
+            # Create container with the startup script as entrypoint
             try:
                 self.container = self.client.containers.run(
                     self.IMAGE,
-                    command=["sleep", "infinity"],  # Simple command that definitely works
-                    volumes=volumes,
+                    entrypoint=["bash", "/lean-cli-start.sh"],
+                    mounts=mounts,
                     environment=environment,
-                    working_dir="/",  # Start in root, create notebooks dir later
+                    working_dir=self.NOTEBOOKS_PATH,
                     detach=True,
                     mem_limit=self.memory_limit,
                     cpu_period=100000,
@@ -126,6 +265,7 @@ class ResearchSession:
                         "mcp.quantconnect.session_id": self.session_id,
                         "mcp.quantconnect.created_at": self.created_at.isoformat(),
                     },
+                    ports={"8888/tcp": str(self.port)},  # Expose Jupyter port to local port
                 )
                 
                 # Explicitly check if container started
@@ -141,8 +281,32 @@ class ResearchSession:
                 logger.error(f"Failed to create/start container: {e}")
                 raise ResearchSessionError(f"Container creation failed: {e}")
             
-            # Wait a moment for container to start
-            await asyncio.sleep(2)
+            # Wait for Jupyter to start up
+            logger.info("Waiting for Jupyter kernel to initialize...")
+            jupyter_ready = False
+            for i in range(12):  # Check for up to 60 seconds
+                await asyncio.sleep(5)
+                
+                # Check if Jupyter is running
+                jupyter_check = await asyncio.to_thread(
+                    self.container.exec_run,
+                    "ps aux | grep -E 'jupyter-lab|jupyter-notebook' | grep -v grep",
+                    workdir="/"
+                )
+                
+                if jupyter_check.exit_code == 0 and jupyter_check.output:
+                    logger.info("Jupyter is running")
+                    jupyter_ready = True
+                    break
+                else:
+                    logger.info(f"Waiting for Jupyter... ({i+1}/12)")
+            
+            if jupyter_ready:
+                logger.info(f"Jupyter kernel is ready on port {self.port}")
+                # Give it a bit more time to fully initialize the kernel
+                await asyncio.sleep(5)
+            else:
+                logger.warning("Jupyter did not start within timeout, proceeding anyway")
             
             # Initialize Python environment in the container
             # First create the notebooks directory if it doesn't exist
@@ -157,19 +321,25 @@ class ResearchSession:
                 ("python3 --version", "Check Python version"),
                 ("python3 -c \"import sys; print('Python initialized:', sys.version)\"", "Test Python import"),
                 ("python3 -c \"import pandas as pd; import numpy as np; print('Data libraries available')\"", "Test data libraries"),
+                ("ls -la /Lean/", "Check LEAN directory"),
+                (["/bin/bash", "-c", "ls -la /opt/miniconda3/share/jupyter/kernels/ 2>/dev/null || echo 'No Jupyter kernels directory'"], "Check Jupyter kernels"),
             ]
             
             for cmd, description in init_commands:
                 logger.info(f"Running initialization: {description}")
                 result = await asyncio.to_thread(
                     self.container.exec_run,
-                    cmd,
+                    cmd if isinstance(cmd, list) else cmd,
                     workdir="/"  # Use root for init commands
                 )
                 if result.exit_code != 0:
-                    error_msg = result.output.decode() if result.output else "No output"
-                    logger.error(f"Init command failed: {cmd} - {error_msg}")
-                    raise ResearchSessionError(f"Container initialization failed ({description}): {error_msg}")
+                    # Don't fail on non-critical checks
+                    if "Check Jupyter kernels" in description:
+                        logger.warning(f"Non-critical check failed: {description}")
+                    else:
+                        error_msg = result.output.decode() if result.output else "No output"
+                        logger.error(f"Init command failed: {cmd} - {error_msg}")
+                        raise ResearchSessionError(f"Container initialization failed ({description}): {error_msg}")
                 else:
                     output = result.output.decode() if result.output else ""
                     logger.info(f"Init success: {output.strip()}")
@@ -253,93 +423,151 @@ class ResearchSession:
                 raise ResearchSessionError(f"Failed to check container status: {e}")
             
             # Execute code directly in container using exec_run (like lean-cli)
-            # Create a simple Python script that preserves stdout for Docker capture
+            # Create a Python script that includes QuantBook initialization
             script_content = f"""#!/usr/bin/env python3
 import sys
 import traceback
 import pandas as pd
 import numpy as np
 
+# Import datetime first
+from datetime import datetime, timedelta
+
+# In QuantConnect Research environment, qb should be pre-initialized by the kernel
+# The user's code will have access to qb and other QuantConnect objects
+
 try:
-    # Execute the user code directly - let prints go to stdout
+    # Execute the user code with qb available
 {chr(10).join('    ' + line for line in code.split(chr(10)))}
 except Exception as e:
     # Print error to stderr so it doesn't interfere with stdout
-    print(f"Error: {{e}}", file=sys.stderr)
+    print(f"Error: {{e}}", file=sys.stderr, flush=True)
     traceback.print_exc(file=sys.stderr)
     sys.exit(1)
 """
             
-            # Create execution command
-            exec_cmd = f'python3 -c {json.dumps(script_content)}'
+            # Debug logging
+            import os
+            from datetime import datetime as dt
+            debug_log_path = "/Users/taylorwilsdon/git/quantconnect-mcp/mcp_debug_output.log"
+            with open(debug_log_path, "a") as debug_file:
+                debug_file.write(f"\n=== EXECUTION DEBUG {dt.now().isoformat()} ===\n")
+                debug_file.write(f"Session: {self.session_id}\n")
+                debug_file.write(f"Code hash: {code_hash}\n")
+                debug_file.write(f"Script preview: {script_content[:200]}...\n")
             
-            # Use Docker streaming API for real-time output capture (like LEAN CLI)
+            # Test with the low-level API to see if we get output
+            test_exec = await asyncio.to_thread(
+                self.container.client.api.exec_create,
+                self.container.id,
+                'echo "Low-level API test"',
+                stdout=True,
+                stderr=True
+            )
+            test_output = await asyncio.to_thread(
+                self.container.client.api.exec_start,
+                test_exec['Id'],
+                stream=False
+            )
+            
+            with open(debug_log_path, "a") as debug_file:
+                debug_file.write(f"Low-level test output: {test_output}\n")
+            
+            # Use low-level Docker API with file-based execution
             try:
-                # Create exec instance
+                # First, write the script to a file in the container
+                script_filename = f"quantbook_exec_{code_hash}.py"
+                script_path = f"{self.NOTEBOOKS_PATH}/{script_filename}"
+                
+                # Write script content to file
+                write_cmd = f"cat > {script_path} << 'EOF'\n{script_content}\nEOF"
+                write_exec = await asyncio.to_thread(
+                    self.container.client.api.exec_create,
+                    self.container.id,
+                    ['/bin/sh', '-c', write_cmd],
+                    stdout=True,
+                    stderr=True,
+                    workdir=self.NOTEBOOKS_PATH
+                )
+                write_result = await asyncio.to_thread(
+                    self.container.client.api.exec_start,
+                    write_exec['Id'],
+                    stream=False
+                )
+                
+                # Debug log the write result
+                with open(debug_log_path, "a") as debug_file:
+                    debug_file.write(f"Script write result: {write_result}\n")
+                
+                # Now execute the script file
+                exec_cmd = f'python3 {script_filename}'
                 exec_instance = await asyncio.to_thread(
                     self.container.client.api.exec_create,
                     self.container.id,
                     exec_cmd,
                     stdout=True,
                     stderr=True,
-                    workdir=self.NOTEBOOKS_PATH,
-                    tty=False
+                    workdir=self.NOTEBOOKS_PATH
                 )
                 
-                # Start execution and get output stream
-                output_stream = await asyncio.to_thread(
-                    self.container.client.api.exec_start,
-                    exec_instance['Id'],
-                    stream=True,
-                    tty=False
+                # Start execution and get output (not streaming)
+                exec_output = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        self.container.client.api.exec_start,
+                        exec_instance['Id'],
+                        stream=False
+                    ),
+                    timeout=execution_timeout
                 )
                 
-                # Collect output with timeout
-                output_chunks = []
-                start_time = asyncio.get_event_loop().time()
-                
-                async def collect_output():
-                    chunk_buffer = b""
-                    for chunk in output_stream:
-                        # Check timeout
-                        if asyncio.get_event_loop().time() - start_time > execution_timeout:
-                            raise asyncio.TimeoutError()
-                        
-                        # Buffer management for complete lines (like LEAN CLI)
-                        chunk_buffer += chunk
-                        
-                        # Process complete lines
-                        while b'\n' in chunk_buffer:
-                            line_end = chunk_buffer.find(b'\n')
-                            line = chunk_buffer[:line_end + 1]
-                            chunk_buffer = chunk_buffer[line_end + 1:]
-                            output_chunks.append(line)
-                        
-                        # Yield control to allow timeout checks
-                        await asyncio.sleep(0)
-                    
-                    # Don't forget remaining buffer content
-                    if chunk_buffer:
-                        output_chunks.append(chunk_buffer)
-                
-                # Run output collection with timeout
-                await asyncio.wait_for(collect_output(), timeout=execution_timeout)
-                
-                # Get execution result
+                # Get exec info for exit code
                 exec_info = await asyncio.to_thread(
                     self.container.client.api.exec_inspect,
                     exec_instance['Id']
                 )
-                exit_code = exec_info.get('ExitCode', 0)
                 
-                # Decode collected output
-                full_output = b''.join(output_chunks).decode('utf-8', errors='replace')
+                exit_code = exec_info.get('ExitCode', -1)
+                
+                # Process the output
+                stdout_output = exec_output.decode('utf-8', errors='replace') if exec_output else ""
+                stderr_output = ""
+                
+                # Debug log the raw output
+                with open(debug_log_path, "a") as debug_file:
+                    debug_file.write(f"Low-level exec_output type: {type(exec_output)}\n")
+                    debug_file.write(f"Low-level exec_output length: {len(exec_output) if exec_output else 0}\n")
+                    debug_file.write(f"Low-level exec_output preview: {repr(exec_output[:500]) if exec_output else 'None'}\n")
+                    debug_file.write(f"Exit code: {exit_code}\n")
+                    debug_file.write(f"Stdout length: {len(stdout_output)}\n")
+                    debug_file.write(f"Stdout preview: {repr(stdout_output[:500])}\n")
+                
+                # Clean up the script file
+                cleanup_exec = await asyncio.to_thread(
+                    self.container.client.api.exec_create,
+                    self.container.id,
+                    f'rm -f {script_filename}',
+                    workdir=self.NOTEBOOKS_PATH
+                )
+                await asyncio.to_thread(
+                    self.container.client.api.exec_start,
+                    cleanup_exec['Id'],
+                    stream=False
+                )
+                
+                # Combine outputs for return
+                full_output = stdout_output
+                if stderr_output and exit_code != 0:
+                    full_output = stdout_output + "\n[STDERR]\n" + stderr_output
                 
             except asyncio.TimeoutError:
                 security_logger.log_resource_limit_hit(
                     self.session_id, "EXECUTION_TIMEOUT", f"{execution_timeout}s"
                 )
                 container_logger.error(f"Code execution timed out after {execution_timeout}s")
+                
+                with open(debug_log_path, "a") as debug_file:
+                    debug_file.write(f"TIMEOUT after {execution_timeout}s\n")
+                
                 return {
                     "status": "error",
                     "output": "",
