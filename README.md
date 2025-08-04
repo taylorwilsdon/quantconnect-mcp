@@ -7,6 +7,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Black-black.svg)](https://github.com/psf/black)
 [![Type Checked](https://img.shields.io/badge/Type%20Checked-mypy-blue.svg)](https://mypy.readthedocs.io/)
+[![PyPI Downloads](https://static.pepy.tech/badge/quantconnect-mcp)](https://pepy.tech/projects/quantconnect-mcp)
 
 **Production-ready Model Context Protocol server for QuantConnect's algorithmic trading platform**
 

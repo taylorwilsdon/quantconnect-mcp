@@ -48,7 +48,7 @@ def register_quantbook_tools(mcp: FastMCP):
     ) -> Dict[str, Any]:
         """
         Initialize a new QuantBook instance in a Docker container for research operations.
-        
+
         IMPORTANT: Research notebooks are located at /LeanCLI in the container.
         - A default starter notebook 'research.ipynb' is automatically created
         - QuantBook is pre-initialized and available as 'qb' in all notebooks
@@ -78,23 +78,48 @@ def register_quantbook_tools(mcp: FastMCP):
                 port=None,  # Will use default or env var
             )
 
-            # Initialize QuantBook in the container (like lean-cli)
-            init_code = """
-                # Import necessary modules
-                import sys
-                import os
+            # Initialize the session and wait for container to be ready
+            await session.initialize()
 
-                # Set up LEAN environment
-                sys.path.append('/Lean')
-                print("Started")
-                """
-            result = await session.execute(init_code)
+            # Check if session initialized successfully
+            if not session._initialized:
+                return {
+                    "status": "error",
+                    "error": "Failed to initialize research session",
+                    "message": f"Failed to initialize QuantBook instance '{instance_name}'",
+                }
 
-            # Check if container is still starting up
-            if result["status"] == "error" and "Container not found" in result.get(
-                "error", ""
-            ):
-                # Container might still be starting, but initialization is successful
+            # Try a simple test to see if we can detect the container is ready
+            # But don't execute complex QuantBook code during initialization
+            try:
+                test_result = await session.execute("print('Container ready')", timeout=10)
+                container_ready = test_result["status"] == "success"
+            except Exception:
+                container_ready = False
+
+            if container_ready:
+                return {
+                    "status": "success",
+                    "instance_name": instance_name,
+                    "session_id": session.session_id,
+                    "message": f"QuantBook instance '{instance_name}' initialized successfully in container",
+                    "container_info": {
+                        "memory_limit": memory_limit,
+                        "cpu_limit": cpu_limit,
+                        "timeout": timeout,
+                        "workspace": str(session.workspace_dir),
+                        "port": session.port,
+                    },
+                    "usage_instructions": {
+                        "CRITICAL": "To use QuantBook functions, the first line in a cell should be qb = QuantBook()",
+                        "DO": "Use qb directly: equity = qb.AddEquity('AAPL')",
+                        "example": "equity = qb.AddEquity('AAPL')\nhistory = qb.History(equity.Symbol, 10, Resolution.Daily)",
+                        "notebook_location": "/LeanCLI - where research.ipynb is located",
+                        "kernel": "Use 'Foundation-Py-Default' kernel for new notebooks"
+                    }
+                }
+            else:
+                # Container is still starting up, but session was created successfully
                 return {
                     "status": "success",
                     "instance_name": instance_name,
@@ -109,42 +134,13 @@ def register_quantbook_tools(mcp: FastMCP):
                     },
                     "note": "Container is still starting. You can check the web interface or try executing code in a few seconds.",
                     "usage_instructions": {
-                        "CRITICAL": "QuantBook (qb) is PRE-INITIALIZED in this environment!",
+                        "CRITICAL": "To use QuantBook functions, the first line in a cell should be qb = QuantBook()",
                         "DO": "Use qb directly: equity = qb.AddEquity('AAPL')",
-                        "DO_NOT": "DO NOT import QuantBook or create qb = QuantBook()",
-                        "example": "# Just use qb directly!\nequity = qb.AddEquity('AAPL')\nhistory = qb.History(equity.Symbol, 10, Resolution.Daily)"
+                        "example": "equity = qb.AddEquity('AAPL')\nhistory = qb.History(equity.Symbol, 10, Resolution.Daily)",
+                        "notebook_location": "/LeanCLI - where research.ipynb is located",
+                        "kernel": "Use 'Foundation-Py-Default' kernel for new notebooks"
                     }
                 }
-
-            if result["status"] != "success":
-                return {
-                    "status": "error",
-                    "error": result.get("error", "Unknown error"),
-                    "message": f"Failed to initialize QuantBook in container for instance '{instance_name}'",
-                }
-
-            return {
-                "status": "success",
-                "instance_name": instance_name,
-                "session_id": session.session_id,
-                "message": f"QuantBook instance '{instance_name}' initialized successfully in container",
-                "container_info": {
-                    "memory_limit": memory_limit,
-                    "cpu_limit": cpu_limit,
-                    "timeout": timeout,
-                    "workspace": str(session.workspace_dir),
-                    "port": session.port,
-                },
-                "output": result.get("output", ""),
-                "usage_instructions": {
-                    "CRITICAL": "QuantBook (qb) is PRE-INITIALIZED in this environment!",
-                    "DO": "Use qb directly: equity = qb.AddEquity('AAPL')",
-                    "DO_NOT": "DO NOT import QuantBook or create qb = QuantBook()",
-                    "example": "# Just use qb directly!\nequity = qb.AddEquity('AAPL')\nhistory = qb.History(equity.Symbol, 10, Resolution.Daily)",
-                    "notebook_location": "/LeanCLI - where research.ipynb is located",
-                    "kernel": "Use 'Foundation-Py-Default' kernel for new notebooks"
-                }
-            }
 
         except Exception as e:
             logger.error(
@@ -382,18 +378,18 @@ def register_quantbook_tools(mcp: FastMCP):
     ) -> Dict[str, Any]:
         """
         Execute Python code in a QuantBook container.
-        
+
         IMPORTANT: This function should modify and execute code in /LeanCLI/research.ipynb
-        
+
         The LLM should:
         1. Read the existing /LeanCLI/research.ipynb file
         2. Add the code as a new cell to the notebook
         3. Execute the notebook cell
         4. Return the results
-        
+
         QuantBook (qb) is ONLY available inside Jupyter notebooks with Foundation-Py-Default kernel!
         DO NOT try to execute standalone Python scripts - they won't have access to qb.
-        
+
         Example workflow:
         1. Read /LeanCLI/research.ipynb
         2. Add cell with: equity = qb.AddEquity("AAPL")
