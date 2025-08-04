@@ -193,9 +193,8 @@ class ResearchSession:
                         "source": [
                             "# QuantConnect Research Environment\n",
                             "Welcome to the QuantConnect Research Environment. ",
-                            "QuantBook is automatically available as 'qb'."
+                            "QuantBook is automatically available as 'qb'.",
                             "qb = QuantBook()"
-
                         ]
                     },
                     {
@@ -208,7 +207,26 @@ class ResearchSession:
                             "\n",
                             "import os\n",
                             "import glob\n",
-                            "qb = QuantBook()\n"
+                            "\n",
+                            "# Configure QuantConnect environment properly\n",
+                            "import QuantConnect\n",
+                            "from QuantConnect.Configuration import Config\n",
+                            "\n",
+                            "# Reset config and set required values\n",
+                            "Config.Reset()\n",
+                            "Config.Set('data-folder', '/Lean/Data')\n",
+                            "Config.Set('log-handler', 'ConsoleLogHandler')\n",
+                            "Config.Set('debug-mode', 'false')\n",
+                            "Config.Set('results-destination-folder', '/LeanCLI')\n",
+                            "\n",
+                            "# Initialize QuantBook with proper error handling\n",
+                            "qb = None\n",
+                            "try:\n",
+                            "    qb = QuantBook()\n",
+                            "    print('✅ QuantBook initialized successfully!')\n",
+                            "except Exception as e:\n",
+                            "    print(f'❌ QuantBook initialization failed: {e}')\n",
+                            "    print('Will attempt to continue with limited functionality...')\n",
                             "\n",
                             "print('Checking for QuantBook initialization...')\n",
                             "\n",
@@ -477,11 +495,24 @@ class ResearchSession:
                             "metadata": {},
                             "source": [
                                 "# QuantBook initialization check\n",
+                                "import QuantConnect\n",
+                                "from QuantConnect.Configuration import Config\n",
+                                "\n",
+                                "# Configure QuantConnect properly\n",
+                                "Config.Reset()\n",
+                                "Config.Set('data-folder', '/Lean/Data')\n",
+                                "Config.Set('log-handler', 'ConsoleLogHandler')\n",
+                                "Config.Set('debug-mode', 'false')\n",
+                                "Config.Set('results-destination-folder', '/LeanCLI')\n",
+                                "\n",
+                                "# Initialize QuantBook with error handling\n",
+                                "qb = None\n",
                                 "try:\n",
-                                "    qb\n",
-                                "    print('QuantBook is already available as qb!')\n",
-                                "except NameError:\n",
-                                "    print('QuantBook (qb) not found in environment')\n"
+                                "    qb = QuantBook()\n",
+                                "    print('✅ QuantBook initialized successfully!')\n",
+                                "except Exception as e:\n",
+                                "    print(f'❌ QuantBook initialization failed: {e}')\n",
+                                "    print('Will attempt to continue with limited functionality...')\n"
                             ],
                             "outputs": []
                         }
@@ -562,10 +593,154 @@ class ResearchSession:
             tools_output = tools_result.output.decode('utf-8', errors='replace') if tools_result.output else ""
             logger.info(f"Available tools in container: {tools_output}")
 
-            # Try direct execution approaches
+            # Use proper Jupyter kernel execution - the key is to communicate with the running kernel
             exec_commands = [
-                # Try jupyter nbconvert with default python3 kernel (most preferred)
-                ("jupyter nbconvert", f"cd /LeanCLI && jupyter nbconvert --to notebook --execute research.ipynb --output research_executed.ipynb --ExecutePreprocessor.kernel_name=python3 2>&1"),
+                # Method 1: Enhanced Jupyter kernel detection and execution
+                ("jupyter kernel", f"""cd /LeanCLI && python -c "
+import requests
+import json
+import time
+import os
+import subprocess
+
+# Load the notebook to get the code
+with open('research.ipynb') as f:
+    nb = json.load(f)
+code = ''.join(nb['cells'][-1]['source'])
+
+print('=== JUPYTER KERNEL DEBUG ===')
+
+# Check if Jupyter server is running
+try:
+    # Try different endpoints and configurations
+    base_urls = ['http://localhost:8888', 'http://127.0.0.1:8888']
+    token = os.environ.get('JUPYTER_TOKEN', '')
+    
+    for base_url in base_urls:
+        print(f'Trying {{base_url}}...')
+        
+        # Check server status
+        try:
+            if token:
+                server_response = requests.get(f'{{base_url}}/api/status?token={{token}}', timeout=3)
+            else:
+                server_response = requests.get(f'{{base_url}}/api/status', timeout=3)
+            print(f'Server status: {{server_response.status_code}}')
+        except Exception as e:
+            print(f'Server check failed: {{e}}')
+            continue
+            
+        # Get kernels
+        try:
+            if token:
+                kernels_response = requests.get(f'{{base_url}}/api/kernels?token={{token}}', timeout=5)
+            else:
+                kernels_response = requests.get(f'{{base_url}}/api/kernels', timeout=5)
+                
+            print(f'Kernels API response: {{kernels_response.status_code}}')
+            
+            if kernels_response.status_code == 200:
+                kernels = kernels_response.json()
+                print(f'Found {{len(kernels)}} kernels: {{[k.get(\\\"id\\\", \\\"unknown\\\") for k in kernels]}}')
+                
+                if kernels:
+                    kernel_id = kernels[0]['id']
+                    print(f'Using kernel: {{kernel_id}}')
+                    
+                    # Execute code via kernel API  
+                    execute_url = f'{{base_url}}/api/kernels/{{kernel_id}}/execute'
+                    if token:
+                        execute_url += f'?token={{token}}'
+                        
+                    execute_data = {{
+                        'code': code,
+                        'silent': False,
+                        'store_history': True,
+                        'user_expressions': {{}},
+                        'allow_stdin': False
+                    }}
+                    
+                    exec_response = requests.post(execute_url, json=execute_data, timeout=30)
+                    
+                    if exec_response.status_code == 200:
+                        result = exec_response.json()
+                        print('=== KERNEL EXECUTION SUCCESS ===')
+                        print(json.dumps(result, indent=2))
+                        break
+                    else:
+                        print(f'Kernel execution failed: {{exec_response.status_code}}')
+                        print(exec_response.text)
+                else:
+                    print('No running kernels found')
+            else:
+                print(f'Kernels API failed: {{kernels_response.status_code}} - {{kernels_response.text}}')
+        except Exception as e:
+            print(f'Kernel API failed for {{base_url}}: {{e}}')
+    
+    # If API approach fails, try to start a kernel and execute
+    print('=== TRYING KERNEL START ===')
+    try:
+        # Create a new kernel session
+        kernel_response = requests.post('http://localhost:8888/api/kernels', 
+                                      json={{'name': 'python3'}}, timeout=10)
+        if kernel_response.status_code == 201:
+            kernel_info = kernel_response.json()
+            kernel_id = kernel_info['id']
+            print(f'Created new kernel: {{kernel_id}}')
+            
+            # Wait a moment for kernel to start
+            time.sleep(2)
+            
+            # Now execute code
+            execute_data = {{
+                'code': code,
+                'silent': False,
+                'store_history': True
+            }}
+            
+            exec_response = requests.post(
+                f'http://localhost:8888/api/kernels/{{kernel_id}}/execute',
+                json=execute_data, timeout=30)
+                
+            if exec_response.status_code == 200:
+                result = exec_response.json()
+                print('=== NEW KERNEL EXECUTION SUCCESS ===')
+                print(json.dumps(result, indent=2))
+            else:
+                print(f'New kernel execution failed: {{exec_response.status_code}}')
+        else:
+            print(f'Failed to create kernel: {{kernel_response.status_code}}')
+    except Exception as e:
+        print(f'Kernel creation failed: {{e}}')
+        
+except Exception as e:
+    print(f'All kernel approaches failed: {{e}}')
+    
+print('=== FALLBACK TO NOTEBOOK EXECUTION ===')
+exec(code)
+" 2>&1"""),
+                
+                # Method 2: Execute using IPython with QuantConnect startup
+                ("ipython execution", f"""cd /LeanCLI && ipython -c "
+import json
+
+# Load the notebook to get the code
+with open('research.ipynb', 'r') as f:
+    nb = json.load(f)
+    
+# Get the last cell's code
+code = ''.join(nb['cells'][-1]['source'])
+
+print('=== EXECUTING CODE ===')
+print(code)
+print('=== OUTPUT ===')
+
+# Execute the code - IPython should have QuantConnect already loaded via startup scripts
+exec(code)
+" 2>&1"""),
+                
+                # Method 3: Use nbconvert with better error handling
+                ("jupyter nbconvert", f"cd /LeanCLI && jupyter nbconvert --to notebook --execute research.ipynb --output research_executed.ipynb --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=60 --allow-errors --no-input 2>&1"),
             ]
 
             executed_successfully = False
@@ -591,8 +766,8 @@ class ResearchSession:
                         executed_successfully = True
                         logger.info(f"Successfully executed with method {i+1} ({method_name})")
 
-                        # For direct python execution, the output is already captured
-                        if "direct" in method_name:
+                        # For direct kernel and ipython execution, the output is already captured
+                        if "jupyter kernel" in method_name or "ipython execution" in method_name:
                             direct_output = execution_output
 
                         break
@@ -685,7 +860,7 @@ class ResearchSession:
             # but still indicate the code was added to the notebook
             return {
                 "status": "success",
-                "output": "Code added to /LeanCLI/research.ipynb. Notebook execution may have failed - please check the Jupyter interface for results.",
+                "output": f"Code added to /LeanCLI/research.ipynb. Executed_successfully output = {executed_successfully}",
                 "error": None,
                 "session_id": self.session_id,
                 "note": f"Notebook execution failed. Details: {execution_output[:500] if execution_output else 'No details available'}"

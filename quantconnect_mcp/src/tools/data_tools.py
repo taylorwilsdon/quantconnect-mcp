@@ -50,6 +50,12 @@ def register_data_tools(mcp: FastMCP):
             add_equity_code = f"""
             from QuantConnect import Resolution
 
+            # Ensure qb is initialized
+            if 'qb' not in globals() or qb is None:
+                # Initialize QuantBook - this will use the container's environment
+                qb = QuantBook()
+                print("Initialized QuantBook instance")
+
             # Map string resolution to enum
             resolution_map = {{
                 "Minute": Resolution.Minute,
@@ -87,11 +93,11 @@ def register_data_tools(mcp: FastMCP):
                     "success": False
                 }}
 
-                # Print error result as JSON
-                import json
-                print("=== QUANTBOOK_RESULT_START ===")
-                print(json.dumps(result))
-                print("=== QUANTBOOK_RESULT_END ===")
+            # Print error result as JSON
+            import json
+            print("=== QUANTBOOK_RESULT_START ===")
+            print(json.dumps(result))
+            print("=== QUANTBOOK_RESULT_END ===")
             """
 
             execution_result = await session.execute(add_equity_code)
@@ -205,6 +211,12 @@ def register_data_tools(mcp: FastMCP):
             add_multiple_code = f"""
             from QuantConnect import Resolution
 
+            # Ensure qb is initialized
+            if 'qb' not in globals() or qb is None:
+                # Initialize QuantBook - this will use the container's environment
+                qb = QuantBook()
+                print("Initialized QuantBook instance")
+
             # Map string resolution to enum
             resolution_map = {{
                 "Minute": Resolution.Minute,
@@ -219,6 +231,7 @@ def register_data_tools(mcp: FastMCP):
 
             for ticker in tickers:
                 try:
+                    # Add equity to QuantBook
                     security = qb.AddEquity(ticker, resolution_map[resolution])
                     symbol = str(security.Symbol)
                     symbols[ticker] = symbol
@@ -332,6 +345,12 @@ from QuantConnect import Resolution
 from datetime import datetime
 import pandas as pd
 
+# Ensure qb is initialized
+if 'qb' not in globals() or qb is None:
+    # Initialize QuantBook - this will use the container's environment
+    qb = QuantBook()
+    print("Initialized QuantBook instance")
+
 # Map string resolution to enum
 resolution_map = {{
     "Minute": Resolution.Minute,
@@ -404,11 +423,11 @@ except Exception as e:
         "message": f"Failed to retrieve history for symbols: {symbols_str}",
     }}
 
-    # Print error result as JSON
-    import json
-    print("=== QUANTBOOK_RESULT_START ===")
-    print(json.dumps(result))
-    print("=== QUANTBOOK_RESULT_END ===")
+# Print error result as JSON
+import json
+print("=== QUANTBOOK_RESULT_START ===")
+print(json.dumps(result))
+print("=== QUANTBOOK_RESULT_END ===")
 """
 
             execution_result = await session.execute(get_history_code)

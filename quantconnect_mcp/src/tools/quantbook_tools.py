@@ -204,6 +204,12 @@ def register_quantbook_tools(mcp: FastMCP):
 
             # Get QuantBook info from container
             info_code = """
+            # Ensure qb is initialized
+            if 'qb' not in globals() or qb is None:
+                # Initialize QuantBook - this will use the container's environment
+                qb = QuantBook()
+                print("Initialized QuantBook instance")
+            
             try:
                 # Get securities count
                 securities_count = len(qb.Securities) if hasattr(qb, 'Securities') else 0

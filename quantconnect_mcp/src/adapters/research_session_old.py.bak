@@ -33,17 +33,17 @@ class ResearchSessionError(Exception):
 class ResearchSession:
     """
     Container-based QuantConnect Research session adapter.
-    
+
     Manages a Docker container running the quantconnect/research image
     and provides methods to execute code and exchange data.
     """
-    
+
     IMAGE = "quantconnect/research:latest"  # Use research image as intended
     CONTAINER_WORKSPACE = "/Lean"  # Match LEAN_ROOT_PATH
     NOTEBOOKS_PATH = "/Lean/Notebooks"
     DATA_PATH = "/Lean/Data"
     TIMEOUT_DEFAULT = 300  # 5 minutes
-    
+
     def __init__(
         self,
         session_id: Optional[str] = None,
@@ -55,7 +55,7 @@ class ResearchSession:
     ):
         """
         Initialize a new research session.
-        
+
         Args:
             session_id: Unique identifier for this session
             workspace_dir: Local workspace directory (temp dir if None)
@@ -70,14 +70,14 @@ class ResearchSession:
         self.timeout = timeout
         self.created_at = datetime.utcnow()
         self.last_used = self.created_at
-        
+
         # Get port from parameter, env var, or default
         import os
         if port is not None:
             self.port = port
         else:
             self.port = int(os.environ.get("QUANTBOOK_DOCKER_PORT", "8888"))
-        
+
         # Setup workspace
         if workspace_dir:
             self.workspace_dir = Path(workspace_dir)
@@ -86,30 +86,30 @@ class ResearchSession:
         else:
             self._temp_dir = tempfile.TemporaryDirectory(prefix=f"qc_research_{self.session_id}_")
             self.workspace_dir = Path(self._temp_dir.name)
-        
+
         # Create necessary directories
         self.notebooks_dir = self.workspace_dir / "Notebooks"
         self.notebooks_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Create data directory structure (minimal for research)
         self.data_dir = self.workspace_dir / "Data"
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Create temp directory for configs
         self.temp_config_dir = self.workspace_dir / "temp"
         self.temp_config_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Docker client and container
         self.client = docker.from_env()
         self.container: Optional[Container] = None
         self._initialized = False
-        
+
         logger.info(f"Created research session {self.session_id} (port: {self.port})")
-    
+
     async def _download_lean_repository(self) -> None:
         """Download and extract the Lean repository for config and data files."""
         logger.info("Downloading latest Lean repository for configuration and data...")
-        
+
         try:
             # Download the Lean repository master branch
             response = await asyncio.to_thread(
@@ -119,26 +119,26 @@ class ResearchSession:
                 timeout=60
             )
             response.raise_for_status()
-            
+
             # Save to temporary file
             zip_path = self.temp_config_dir / "lean-master.zip"
             with open(zip_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
-            
+
             # Extract the zip file
             extract_dir = self.temp_config_dir / "lean-extract"
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 zip_ref.extractall(extract_dir)
-            
+
             # Copy the config file
             source_config = extract_dir / "Lean-master" / "Launcher" / "config.json"
             if source_config.exists():
                 # Read and clean the config (like lean-cli does)
                 config_content = source_config.read_text(encoding="utf-8")
                 lean_config = self._parse_json_with_comments(config_content)
-                
+
                 # Update config with research-specific settings
                 lean_config["environment"] = "backtesting"
                 lean_config["algorithm-type-name"] = "QuantBookResearch"
@@ -152,20 +152,20 @@ class ResearchSession:
                 lean_config["results-destination-folder"] = "/tmp"
                 lean_config["object-store-name"] = self.session_id
                 lean_config["data-folder"] = "/Lean/Data"
-                
+
                 # No real limit for the object store by default
                 lean_config["storage-limit-mb"] = "9999999"
                 lean_config["storage-file-count"] = "9999999"
-                
+
                 # Save the cleaned config
                 config_path = self.temp_config_dir / "config.json"
                 with open(config_path, "w") as f:
                     json.dump(lean_config, f, indent=2)
-                
+
                 logger.info("Lean configuration downloaded and prepared")
             else:
                 raise ResearchSessionError("Could not find Launcher/config.json in Lean repository")
-            
+
             # Copy the Data directory
             source_data = extract_dir / "Lean-master" / "Data"
             if source_data.exists() and source_data.is_dir():
@@ -178,26 +178,26 @@ class ResearchSession:
                         dest_dir.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copytree(source_dir, dest_dir, dirs_exist_ok=True)
                         logger.info(f"Copied data directory: {dir_name}")
-                
+
                 logger.info("Essential data files downloaded")
             else:
                 logger.warning("Could not find Data directory in Lean repository")
-            
+
             # Clean up
             zip_path.unlink(missing_ok=True)
             shutil.rmtree(extract_dir, ignore_errors=True)
-            
+
         except Exception as e:
             logger.error(f"Failed to download Lean repository: {e}")
             raise ResearchSessionError(f"Failed to download Lean repository: {e}")
-    
+
     def _parse_json_with_comments(self, content: str) -> Dict[str, Any]:
         """Parse JSON content that may contain comments."""
         try:
             import re
             # Remove multi-line and single-line comments
             content = re.sub(r'/\*.*?\*/|//[^\r\n"]*[\r\n]', '', content, flags=re.DOTALL)
-            
+
             # Handle single line comments with double quotes
             lines = []
             for line in content.split('\n'):
@@ -217,19 +217,19 @@ class ResearchSession:
                     previous_char = current_char
                     i += 1
                 lines.append(cleaned_line)
-            
+
             cleaned_content = '\n'.join(lines)
             return json.loads(cleaned_content)
         except Exception as e:
             logger.error(f"Failed to parse JSON with comments: {e}")
             # Fallback to simple JSON parsing
             return json.loads(content)
-    
+
     async def initialize(self) -> None:
         """Initialize the Docker container."""
         if self._initialized:
             return
-        
+
         try:
             # Ensure the image is available
             try:
@@ -237,15 +237,15 @@ class ResearchSession:
             except docker.errors.ImageNotFound:
                 logger.info(f"Pulling image {self.IMAGE}...")
                 self.client.images.pull(self.IMAGE)
-            
+
             # Download and extract Lean repository for config and data (like lean-cli does)
             await self._download_lean_repository()
-            
+
             # Load the full Lean config from the downloaded repository
             config_path = self.temp_config_dir / "config.json"
             if not config_path.exists():
                 raise ResearchSessionError("Failed to download Lean configuration")
-            
+
             # Create a default research notebook if none exists
             default_notebook = self.notebooks_dir / "research.ipynb"
             if not default_notebook.exists():
@@ -254,7 +254,7 @@ class ResearchSession:
                         {
                             "cell_type": "markdown",
                             "metadata": {},
-                            "source": ["# QuantConnect Research Environment\n", 
+                            "source": ["# QuantConnect Research Environment\n",
                                       "Welcome to the QuantConnect Research Environment. ",
                                       "Here you can perform historical research using the QuantBook API."]
                         },
@@ -277,7 +277,7 @@ class ResearchSession:
                 }
                 with open(default_notebook, "w") as f:
                     json.dump(notebook_content, f, indent=2)
-            
+
             # Set up mounts exactly like LEAN CLI
             mounts = [
                 # Mount notebooks directory
@@ -309,14 +309,14 @@ class ResearchSession:
                     read_only=True
                 )
             ]
-            
+
             # Add environment variables like lean-cli does
             environment = {
                 "COMPOSER_DLL_DIRECTORY": "/Lean",
                 "LEAN_ENGINE": "true",
                 "PYTHONPATH": "/Lean"
             }
-            
+
             # Create the startup script similar to LEAN CLI
             shell_script_commands = [
                 "#!/usr/bin/env bash",
@@ -339,20 +339,20 @@ class ResearchSession:
                 "    exec sleep infinity",
                 "fi"
             ]
-            
+
             # Write the startup script to a temporary file
             if self._temp_dir:
                 startup_script_path = Path(self._temp_dir.name) / "lean-cli-start.sh"
             else:
                 startup_script_path = self.workspace_dir / "lean-cli-start.sh"
-            
+
             startup_script_path.parent.mkdir(parents=True, exist_ok=True)
             with open(startup_script_path, "w", encoding="utf-8", newline="\n") as file:
                 file.write("\n".join(shell_script_commands) + "\n")
-            
+
             # Make the script executable
             os.chmod(startup_script_path, 0o755)
-            
+
             # Add the startup script mount
             mounts.append(Mount(
                 target="/lean-cli-start.sh",
@@ -360,7 +360,7 @@ class ResearchSession:
                 type="bind",
                 read_only=True
             ))
-            
+
             # Create container with the startup script as entrypoint
             try:
                 self.container = self.client.containers.run(
@@ -381,47 +381,47 @@ class ResearchSession:
                     },
                     ports={"8888/tcp": str(self.port)},  # Expose Jupyter port to local port
                 )
-                
+
                 # Explicitly check if container started
                 self.container.reload()
                 if self.container.status != "running":
                     # If not running, get logs to see what went wrong
                     logs = self.container.logs().decode()
                     raise ResearchSessionError(f"Container failed to start (status: {self.container.status}). Logs: {logs}")
-                    
+
                 logger.info(f"Container {self.container.id} started successfully with status: {self.container.status}")
-                
+
             except Exception as e:
                 logger.error(f"Failed to create/start container: {e}")
                 raise ResearchSessionError(f"Container creation failed: {e}")
-            
+
             # Wait for Jupyter to start up
             logger.info("Waiting for Jupyter kernel to initialize...")
             jupyter_ready = False
             for i in range(12):  # Check for up to 60 seconds
                 await asyncio.sleep(5)
-                
+
                 # Check if Jupyter is running
                 jupyter_check = await asyncio.to_thread(
                     self.container.exec_run,
                     "ps aux | grep -E 'jupyter-lab|jupyter-notebook' | grep -v grep",
                     workdir="/"
                 )
-                
+
                 if jupyter_check.exit_code == 0 and jupyter_check.output:
                     logger.info("Jupyter is running")
                     jupyter_ready = True
                     break
                 else:
                     logger.info(f"Waiting for Jupyter... ({i+1}/12)")
-            
+
             if jupyter_ready:
                 logger.info(f"Jupyter kernel is ready on port {self.port}")
                 # Give it a bit more time to fully initialize the kernel
                 await asyncio.sleep(5)
             else:
                 logger.warning("Jupyter did not start within timeout, proceeding anyway")
-            
+
             # Initialize Python environment in the container
             # First create the notebooks directory if it doesn't exist
             mkdir_result = await asyncio.to_thread(
@@ -429,7 +429,7 @@ class ResearchSession:
                 f"mkdir -p {self.NOTEBOOKS_PATH}",
                 workdir="/"
             )
-            
+
             # Test basic Python functionality
             init_commands = [
                 ("python3 --version", "Check Python version"),
@@ -438,7 +438,7 @@ class ResearchSession:
                 ("ls -la /Lean/", "Check LEAN directory"),
                 (["/bin/bash", "-c", "ls -la /opt/miniconda3/share/jupyter/kernels/ 2>/dev/null || echo 'No Jupyter kernels directory'"], "Check Jupyter kernels"),
             ]
-            
+
             for cmd, description in init_commands:
                 logger.info(f"Running initialization: {description}")
                 result = await asyncio.to_thread(
@@ -457,21 +457,21 @@ class ResearchSession:
                 else:
                     output = result.output.decode() if result.output else ""
                     logger.info(f"Init success: {output.strip()}")
-            
+
             self._initialized = True
-            
+
             # Security logging
             security_logger.log_session_created(self.session_id, self.container.id)
             logger.info(f"Research session {self.session_id} initialized successfully")
-            
+
             container_logger = get_container_logger(self.session_id)
             container_logger.info(f"Container {self.container.id} ready for session {self.session_id}")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize research session {self.session_id}: {e}")
             await self.close()
             raise ResearchSessionError(f"Failed to initialize research session: {e}")
-    
+
     async def execute(
         self,
         code: str,
@@ -479,24 +479,24 @@ class ResearchSession:
     ) -> Dict[str, Any]:
         """
         Execute Python code in the research container with comprehensive error handling.
-        
+
         Args:
             code: Python code to execute
             timeout: Execution timeout in seconds (uses default if None)
-            
+
         Returns:
             Dictionary with execution results
         """
         if not self._initialized:
             await self.initialize()
-        
+
         if not self.container:
             raise ResearchSessionError("Container not available")
-        
+
         # Security and logging
         code_hash = hashlib.sha256(code.encode()).hexdigest()[:16]
         container_logger = get_container_logger(self.session_id)
-        
+
         # Basic security checks
         if len(code) > 50000:  # 50KB limit
             security_logger.log_security_violation(
@@ -508,25 +508,25 @@ class ResearchSession:
                 "error": "Code size exceeds 50KB limit",
                 "session_id": self.session_id,
             }
-        
+
         # Check for potentially dangerous operations
         dangerous_patterns = [
             "import os", "import subprocess", "import sys", "__import__",
             "exec(", "eval(", "compile(", "open(", "file(",
         ]
-        
+
         for pattern in dangerous_patterns:
             if pattern in code.lower():
                 security_logger.log_security_violation(
                     self.session_id, "DANGEROUS_CODE_PATTERN", f"Pattern: {pattern}"
                 )
                 container_logger.warning(f"Potentially dangerous code pattern detected: {pattern}")
-        
+
         self.last_used = datetime.utcnow()
         execution_timeout = timeout or self.timeout
-        
+
         container_logger.info(f"Executing code (hash: {code_hash}, timeout: {execution_timeout}s)")
-        
+
         try:
             # Check container health before execution
             try:
@@ -535,7 +535,7 @@ class ResearchSession:
                     raise ResearchSessionError(f"Container is not running (status: {container_status})")
             except Exception as e:
                 raise ResearchSessionError(f"Failed to check container status: {e}")
-            
+
             # Execute code directly in container using exec_run (like lean-cli)
             # Create a Python script that includes QuantBook initialization
             script_content = f"""#!/usr/bin/env python3
@@ -559,7 +559,7 @@ except Exception as e:
     traceback.print_exc(file=sys.stderr)
     sys.exit(1)
 """
-            
+
             # Debug logging
             import os
             from datetime import datetime as dt
@@ -569,7 +569,7 @@ except Exception as e:
                 debug_file.write(f"Session: {self.session_id}\n")
                 debug_file.write(f"Code hash: {code_hash}\n")
                 debug_file.write(f"Script preview: {script_content[:200]}...\n")
-            
+
             # Test with the low-level API to see if we get output
             test_exec = await asyncio.to_thread(
                 self.container.client.api.exec_create,
@@ -583,16 +583,16 @@ except Exception as e:
                 test_exec['Id'],
                 stream=False
             )
-            
+
             with open(debug_log_path, "a") as debug_file:
                 debug_file.write(f"Low-level test output: {test_output}\n")
-            
+
             # Use low-level Docker API with file-based execution
             try:
                 # First, write the script to a file in the container
                 script_filename = f"quantbook_exec_{code_hash}.py"
                 script_path = f"{self.NOTEBOOKS_PATH}/{script_filename}"
-                
+
                 # Write script content to file
                 write_cmd = f"cat > {script_path} << 'EOF'\n{script_content}\nEOF"
                 write_exec = await asyncio.to_thread(
@@ -608,11 +608,11 @@ except Exception as e:
                     write_exec['Id'],
                     stream=False
                 )
-                
+
                 # Debug log the write result
                 with open(debug_log_path, "a") as debug_file:
                     debug_file.write(f"Script write result: {write_result}\n")
-                
+
                 # Now execute the script file
                 exec_cmd = f'python3 {script_filename}'
                 exec_instance = await asyncio.to_thread(
@@ -623,7 +623,7 @@ except Exception as e:
                     stderr=True,
                     workdir=self.NOTEBOOKS_PATH
                 )
-                
+
                 # Start execution and get output (not streaming)
                 exec_output = await asyncio.wait_for(
                     asyncio.to_thread(
@@ -633,19 +633,19 @@ except Exception as e:
                     ),
                     timeout=execution_timeout
                 )
-                
+
                 # Get exec info for exit code
                 exec_info = await asyncio.to_thread(
                     self.container.client.api.exec_inspect,
                     exec_instance['Id']
                 )
-                
+
                 exit_code = exec_info.get('ExitCode', -1)
-                
+
                 # Process the output
                 stdout_output = exec_output.decode('utf-8', errors='replace') if exec_output else ""
                 stderr_output = ""
-                
+
                 # Debug log the raw output
                 with open(debug_log_path, "a") as debug_file:
                     debug_file.write(f"Low-level exec_output type: {type(exec_output)}\n")
@@ -654,7 +654,7 @@ except Exception as e:
                     debug_file.write(f"Exit code: {exit_code}\n")
                     debug_file.write(f"Stdout length: {len(stdout_output)}\n")
                     debug_file.write(f"Stdout preview: {repr(stdout_output[:500])}\n")
-                
+
                 # Clean up the script file
                 cleanup_exec = await asyncio.to_thread(
                     self.container.client.api.exec_create,
@@ -667,21 +667,21 @@ except Exception as e:
                     cleanup_exec['Id'],
                     stream=False
                 )
-                
+
                 # Combine outputs for return
                 full_output = stdout_output
                 if stderr_output and exit_code != 0:
                     full_output = stdout_output + "\n[STDERR]\n" + stderr_output
-                
+
             except asyncio.TimeoutError:
                 security_logger.log_resource_limit_hit(
                     self.session_id, "EXECUTION_TIMEOUT", f"{execution_timeout}s"
                 )
                 container_logger.error(f"Code execution timed out after {execution_timeout}s")
-                
+
                 with open(debug_log_path, "a") as debug_file:
                     debug_file.write(f"TIMEOUT after {execution_timeout}s\n")
-                
+
                 return {
                     "status": "error",
                     "output": "",
@@ -689,16 +689,16 @@ except Exception as e:
                     "session_id": self.session_id,
                     "timeout": True,
                 }
-            
+
             # Log the output for debugging
             container_logger.debug(f"Container output (exit_code: {exit_code}): {repr(full_output[:200])}")
-            
+
             # Check execution status based on exit code
             if exit_code == 0:
                 # Success - return stdout content
                 security_logger.log_code_execution(self.session_id, code_hash, True)
                 container_logger.info(f"Code execution successful (hash: {code_hash})")
-                
+
                 return {
                     "status": "success",
                     "output": full_output.strip(),  # Remove trailing whitespace
@@ -709,7 +709,7 @@ except Exception as e:
                 # Error - output contains both stdout and stderr
                 security_logger.log_code_execution(self.session_id, code_hash, False)
                 container_logger.error(f"Code execution failed (hash: {code_hash}, exit_code: {exit_code})")
-                
+
                 return {
                     "status": "error",
                     "output": full_output.strip(),
@@ -717,7 +717,7 @@ except Exception as e:
                     "session_id": self.session_id,
                     "exit_code": exit_code,
                 }
-        
+
         except ResearchSessionError:
             # Re-raise custom exceptions
             raise
@@ -731,7 +731,7 @@ except Exception as e:
                 "session_id": self.session_id,
                 "exception_type": type(e).__name__,
             }
-    
+
     async def save_dataframe(
         self,
         df: pd.DataFrame,
@@ -740,18 +740,18 @@ except Exception as e:
     ) -> Dict[str, Any]:
         """
         Save a pandas DataFrame to the workspace.
-        
+
         Args:
             df: DataFrame to save
             filename: Output filename
             format: File format (parquet, csv, json)
-            
+
         Returns:
             Operation result
         """
         try:
             filepath = self.workspace_dir / filename
-            
+
             if format.lower() == "parquet":
                 df.to_parquet(filepath)
             elif format.lower() == "csv":
@@ -760,7 +760,7 @@ except Exception as e:
                 df.to_json(filepath, orient="records", date_format="iso")
             else:
                 raise ValueError(f"Unsupported format: {format}")
-            
+
             return {
                 "status": "success",
                 "message": f"DataFrame saved to {filename}",
@@ -768,14 +768,14 @@ except Exception as e:
                 "format": format,
                 "shape": df.shape,
             }
-        
+
         except Exception as e:
             return {
                 "status": "error",
                 "error": str(e),
                 "message": f"Failed to save DataFrame to {filename}",
             }
-    
+
     async def load_dataframe(
         self,
         filename: str,
@@ -783,27 +783,27 @@ except Exception as e:
     ) -> Dict[str, Any]:
         """
         Load a pandas DataFrame from the workspace.
-        
+
         Args:
             filename: Input filename
             format: File format (auto-detected if None)
-            
+
         Returns:
             Operation result with DataFrame data
         """
         try:
             filepath = self.workspace_dir / filename
-            
+
             if not filepath.exists():
                 return {
                     "status": "error",
                     "error": f"File {filename} not found in workspace",
                 }
-            
+
             # Auto-detect format if not specified
             if format is None:
                 format = filepath.suffix.lower().lstrip(".")
-            
+
             if format == "parquet":
                 df = pd.read_parquet(filepath)
             elif format == "csv":
@@ -815,7 +815,7 @@ except Exception as e:
                     "status": "error",
                     "error": f"Unsupported format: {format}",
                 }
-            
+
             return {
                 "status": "success",
                 "message": f"DataFrame loaded from {filename}",
@@ -824,23 +824,23 @@ except Exception as e:
                 "dtypes": df.dtypes.to_dict(),
                 "data": df.to_dict("records")[:100],  # Limit to first 100 rows
             }
-        
+
         except Exception as e:
             return {
                 "status": "error",
                 "error": str(e),
                 "message": f"Failed to load DataFrame from {filename}",
             }
-    
+
     def is_expired(self, max_idle_time: timedelta = timedelta(hours=1)) -> bool:
         """Check if session has been idle too long."""
         return datetime.utcnow() - self.last_used > max_idle_time
-    
+
     async def close(self, reason: str = "normal") -> None:
         """Clean up the research session with enhanced logging."""
         logger.info(f"Closing research session {self.session_id} (reason: {reason})")
         container_logger = get_container_logger(self.session_id)
-        
+
         try:
             if self.container:
                 container_id = self.container.id
@@ -856,25 +856,25 @@ except Exception as e:
                         container_logger.warning(f"Container {container_id} force killed")
                     except Exception as e2:
                         container_logger.error(f"Error killing container {container_id}: {e2}")
-                
+
                 self.container = None
-            
+
             if self._temp_dir:
                 container_logger.info(f"Cleaning up temporary directory: {self._temp_dir.name}")
                 self._temp_dir.cleanup()
                 self._temp_dir = None
-            
+
             # Security logging
             security_logger.log_session_destroyed(self.session_id, reason)
-            
+
         except Exception as e:
             logger.error(f"Error during session cleanup: {e}")
             container_logger.error(f"Cleanup failed: {e}")
-        
+
         finally:
             self._initialized = False
             logger.info(f"Research session {self.session_id} cleanup completed")
-    
+
     def __repr__(self) -> str:
         return (
             f"ResearchSession(id={self.session_id}, "
