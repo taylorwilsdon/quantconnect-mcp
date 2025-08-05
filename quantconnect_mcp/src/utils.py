@@ -18,7 +18,7 @@ def safe_print(text):
         # Running as MCP server, suppress output to avoid JSON parsing errors
         try:
             logger.debug(f"[MCP Server] {text}")
-        except:
+        except Exception:
             # If logging fails, just ignore silently
             pass
         return
