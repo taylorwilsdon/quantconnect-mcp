@@ -39,33 +39,13 @@ def register_system_resources(mcp: FastMCP):
     @mcp.resource("resource://quantconnect/server/status")
     async def server_status() -> Dict[str, Any]:
         """Get QuantConnect MCP server status and statistics."""
-        from ..tools.quantbook_tools import _quantbook_instances  # type: ignore
-
-        # Count active QuantBook instances
-        active_instances = len(_quantbook_instances)
-
-        # Get instance details
-        instance_details = {}
-        for name, qb in _quantbook_instances.items():
-            try:
-                securities_count = (
-                    len(qb.Securities) if hasattr(qb, "Securities") else 0
-                )
-                instance_details[name] = {
-                    "type": str(type(qb).__name__),
-                    "securities_count": securities_count,
-                    "status": "active",
-                }
-            except Exception as e:
-                instance_details[name] = {"status": "error", "error": str(e)}
-
         return {
             "server_name": "QuantConnect MCP Server",
             "status": "running",
-            "active_quantbook_instances": active_instances,
-            "instance_details": instance_details,
             "available_tools": [
-                "QuantBook Management",
+                "Project Management",
+                "File Management", 
+                "Backtest Management",
                 "Data Retrieval",
                 "Statistical Analysis",
                 "Portfolio Optimization",
@@ -78,13 +58,43 @@ def register_system_resources(mcp: FastMCP):
     async def tools_summary() -> Dict[str, Any]:
         """Get summary of available QuantConnect tools."""
         return {
-            "quantbook_tools": {
-                "description": "QuantBook instance management and initialization",
+            "auth_tools": {
+                "description": "Authentication and credential management",
                 "tools": [
-                    "initialize_quantbook",
-                    "list_quantbook_instances",
-                    "get_quantbook_info",
-                    "remove_quantbook_instance",
+                    "configure_quantconnect_auth",
+                    "validate_quantconnect_auth", 
+                    "get_auth_status",
+                    "test_quantconnect_api",
+                    "clear_quantconnect_auth",
+                ],
+            },
+            "project_tools": {
+                "description": "Project lifecycle management",
+                "tools": [
+                    "create_project",
+                    "read_project", 
+                    "update_project",
+                    "compile_project",
+                    "read_compilation_result",
+                ],
+            },
+            "file_tools": {
+                "description": "File management within projects",
+                "tools": [
+                    "create_file",
+                    "read_file",
+                    "update_file_content", 
+                    "update_file_name",
+                ],
+            },
+            "backtest_tools": {
+                "description": "Backtest execution and analysis",
+                "tools": [
+                    "create_backtest",
+                    "read_backtest",
+                    "read_backtest_chart",
+                    "read_backtest_orders",
+                    "read_backtest_insights",
                 ],
             },
             "data_tools": {
@@ -123,7 +133,7 @@ def register_system_resources(mcp: FastMCP):
                     "screen_assets_by_criteria",
                 ],
             },
-            "total_tools": 19,
+            "total_tools": 32,
             "timestamp": datetime.now().isoformat(),
         }
 
