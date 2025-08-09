@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "quantconnect-mcp",
   "display_name": "QuantConnect MCP Server",
-  "version": "0.1.12",
+  "version": "0.2.0",
   "description": "QuantConnect platform integration with AI assistants for algorithmic trading project management, backtesting, and API access through MCP",
   "long_description": "An MCP server that provides AI assistants with access to QuantConnect's algorithmic trading platform. Features include project management, file management, backtesting, and authentication tools for quantitative finance.",
   "author": {
@@ -189,7 +189,11 @@
       "sensitive": false,
       "default": "stdio",
       "validation": {
-        "enum": ["stdio", "sse", "websocket"]
+        "enum": [
+          "stdio",
+          "sse",
+          "websocket"
+        ]
       }
     },
     "MCP_HOST": {
@@ -220,12 +224,19 @@
     "network": true,
     "filesystem": {
       "read": true,
-      "write": ["${config_dir}", "${temp_dir}"]
+      "write": [
+        "${config_dir}",
+        "${temp_dir}"
+      ]
     }
   },
   "requirements": {
     "python": ">=3.12",
-    "platforms": ["windows", "macos", "linux"]
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ]
   },
   "keywords": [
     "quantconnect",
