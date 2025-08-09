@@ -22,7 +22,6 @@ from quantconnect_mcp.src.tools import (
     register_file_tools,
     register_backtest_tools,
 )
-from quantconnect_mcp.src.resources import register_system_resources
 from quantconnect_mcp.src.auth import configure_auth
 from quantconnect_mcp.src.utils import safe_print
 
@@ -58,9 +57,6 @@ def main():
     register_portfolio_tools(mcp)
     register_universe_tools(mcp)
 
-    # Register resources
-    safe_print("📊 Registering system resources...")
-    register_system_resources(mcp)
 
     safe_print(f"✅ QuantConnect MCP Server initialized")
 

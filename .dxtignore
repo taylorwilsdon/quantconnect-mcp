@@ -4,6 +4,8 @@ __pycache__/
 *.py[cod]
 *.so
 .mypy_cache/*
+release.py
+
 # ---- Packaging ---------------------------------------------------------
 *.egg-info/
 build/
@@ -36,6 +38,15 @@ credentials.json
 pytest_out.txt
 mcp_server_debug.log
 diff_output.txt
+planning_docs/
+changes.diff
+*.diff
+*.patch
+
+# ---- Non-main branch files ----------------------------------------
+lean-cli/
+tests/test_*.py
+quantconnect_mcp/src/problematicdiff.txt*
 
 # ---- Temporary & Build Files ------------------------------------------
 *.tmp
