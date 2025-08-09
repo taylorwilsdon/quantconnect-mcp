@@ -323,7 +323,7 @@ def register_project_tools(mcp: FastMCP):
             project_id: The ID of the project to compile.
 
         Returns:
-            A dictionary containing the compilation result.
+            A dictionary containing the compilation result with compile ID, state, and logs.
         """
         auth = get_auth_instance()
         if auth is None:
@@ -333,8 +333,11 @@ def register_project_tools(mcp: FastMCP):
             }
 
         try:
+            # Prepare request data with project ID in JSON payload
+            request_data = {"projectId": project_id}
+            
             response = await auth.make_authenticated_request(
-                endpoint=f"projects/{project_id}/compile", method="POST"
+                endpoint="compile/create", method="POST", json=request_data
             )
 
             if response.status_code == 200:
@@ -343,7 +346,11 @@ def register_project_tools(mcp: FastMCP):
                     return {
                         "status": "success",
                         "compile_id": data.get("compileId"),
-                        "project_id": project_id,
+                        "state": data.get("state"),
+                        "project_id": data.get("projectId"),
+                        "signature": data.get("signature"),
+                        "signature_order": data.get("signatureOrder", []),
+                        "logs": data.get("logs", []),
                         "message": "Project compilation started successfully.",
                     }
                 else:
@@ -353,6 +360,11 @@ def register_project_tools(mcp: FastMCP):
                         "details": data.get("errors", []),
                         "project_id": project_id,
                     }
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
             else:
                 return {
                     "status": "error",
@@ -364,4 +376,98 @@ def register_project_tools(mcp: FastMCP):
                 "status": "error",
                 "error": f"An unexpected error occurred: {e}",
                 "project_id": project_id,
+            }
+
+    @mcp.tool()
+    async def read_compilation_result(project_id: int, compile_id: str) -> Dict[str, Any]:
+        """
+        Read the result of a compilation job in QuantConnect.
+
+        Args:
+            project_id: The ID of the project that was compiled.
+            compile_id: The compile ID returned from compile_project.
+
+        Returns:
+            A dictionary containing the compilation result with state, logs, and errors.
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data with project ID and compile ID in JSON payload
+            request_data = {"projectId": project_id, "compileId": compile_id}
+            
+            response = await auth.make_authenticated_request(
+                endpoint="compile/read", method="POST", json=request_data
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    logs = data.get("logs", [])
+                    errors = data.get("errors", [])
+                    state = data.get("state")
+                    
+                    # Check for compilation warnings in logs that indicate issues
+                    warnings = []
+                    for log in logs:
+                        if "Warning" in log:
+                            warnings.append(log)
+                    
+                    # If there are warnings or explicit errors, treat as compilation failure
+                    if warnings or errors:
+                        return {
+                            "status": "error",
+                            "compile_id": data.get("compileId"),
+                            "state": state,
+                            "project_id": data.get("projectId"),
+                            "signature": data.get("signature"),
+                            "signature_order": data.get("signatureOrder", []),
+                            "logs": logs,
+                            "errors": errors,
+                            "warnings": warnings,
+                            "message": f"Compilation completed with {len(warnings)} warnings and {len(errors)} errors. Code issues must be fixed before proceeding.",
+                            "error": f"Compilation failed: {len(warnings)} warnings, {len(errors)} errors found",
+                        }
+                    
+                    return {
+                        "status": "success",
+                        "compile_id": data.get("compileId"),
+                        "state": state,
+                        "project_id": data.get("projectId"),
+                        "signature": data.get("signature"),
+                        "signature_order": data.get("signatureOrder", []),
+                        "logs": logs,
+                        "errors": errors,
+                        "message": f"Compilation result retrieved successfully. State: {state}",
+                    }
+                else:
+                    return {
+                        "status": "error",
+                        "error": "Failed to read compilation result.",
+                        "details": data.get("errors", []),
+                        "project_id": project_id,
+                        "compile_id": compile_id,
+                    }
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": response.text[:500] if hasattr(response, "text") else "No response text",
+                }
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"An unexpected error occurred: {e}",
+                "project_id": project_id,
+                "compile_id": compile_id,
             }

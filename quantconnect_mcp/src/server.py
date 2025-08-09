@@ -5,15 +5,11 @@ from typing import Optional
 from fastmcp import FastMCP
 
 from .tools import (
-    register_quantbook_tools,
-    register_data_tools,
-    register_analysis_tools,
-    register_portfolio_tools,
-    register_universe_tools,
     register_auth_tools,
     register_project_tools,
     register_file_tools,
     register_backtest_tools,
+    register_live_tools,
 )
 from .auth import configure_auth
 from .utils import safe_print
@@ -23,14 +19,21 @@ mcp: FastMCP = FastMCP(
     name="QuantConnect MCP Server",
     instructions="""
     This server provides comprehensive QuantConnect API functionality for:
-    - Research environment operations with QuantBook
-    - Historical data retrieval and analysis
-    - Statistical analysis (PCA, cointegration, mean reversion)
-    - Portfolio optimization and risk analysis
-    - Universe selection and asset filtering
-    - Alternative data integration
+    - Project and backtest management
+    - File management within projects
+    - Authentication and API access
+    - Compilation and execution of code and jupyter notebooks
 
-    Use the available tools to interact with QuantConnect's research capabilities.
+    You must never use emojis. They will `contains invalid characters` exceptions.
+
+    When writing QuantConnect code, refer to the QuantConnect documentation and platform resources for:
+    - Proper import patterns and modules available on the platform
+    - Algorithm class structures and inheritance requirements
+    - Available data types, resolutions, and market data APIs
+    - Portfolio management and trading methods
+    - Research environment capabilities and libraries
+
+    Use the available tools to interact with QuantConnect's cloud platform.
     """,
     on_duplicate_tools="error",
     dependencies=[
@@ -71,11 +74,7 @@ def main():
     register_project_tools(mcp)
     register_file_tools(mcp)
     register_backtest_tools(mcp)
-    register_quantbook_tools(mcp)
-    register_data_tools(mcp)
-    register_analysis_tools(mcp)
-    register_portfolio_tools(mcp)
-    register_universe_tools(mcp)
+    register_live_tools(mcp)
 
 
     safe_print(f"✅ QuantConnect MCP Server initialized")

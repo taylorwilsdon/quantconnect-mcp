@@ -8,9 +8,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from src.server import mcp
-from src.tools.quantbook_tools import get_quantbook_instance
-
-
 class TestQuantConnectMCPServer:
     """Test class for QuantConnect MCP Server functionality."""
 
@@ -18,15 +15,6 @@ class TestQuantConnectMCPServer:
         """Test that the MCP server initializes correctly."""
         assert mcp.name == "QuantConnect MCP Server"
         assert "QuantConnect" in mcp.instructions
-
-    def test_quantbook_instance_management(self):
-        """Test QuantBook instance management functions."""
-        # Test that no instances exist initially
-        assert get_quantbook_instance("test") is None
-
-        # Test instance management without actual QuantConnect installation
-        # This is a structural test only
-        assert callable(get_quantbook_instance)
 
     def test_server_has_required_dependencies(self):
         """Test that server declares required dependencies."""
@@ -72,7 +60,6 @@ class TestMCPToolsStructure:
     async def test_tools_can_be_registered(self):
         """Test that tools can be registered without errors."""
         from src.tools import (
-            register_quantbook_tools,
             register_data_tools,
             register_analysis_tools,
             register_portfolio_tools,
@@ -80,7 +67,6 @@ class TestMCPToolsStructure:
         )
 
         # Test that all registration functions are callable
-        assert callable(register_quantbook_tools)
         assert callable(register_data_tools)
         assert callable(register_analysis_tools)
         assert callable(register_portfolio_tools)
