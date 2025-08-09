@@ -5,11 +5,6 @@ from typing import Optional
 from fastmcp import FastMCP
 
 from .tools import (
-    register_quantbook_tools,
-    register_data_tools,
-    register_analysis_tools,
-    register_portfolio_tools,
-    register_universe_tools,
     register_auth_tools,
     register_project_tools,
     register_file_tools,
@@ -24,14 +19,11 @@ mcp: FastMCP = FastMCP(
     name="QuantConnect MCP Server",
     instructions="""
     This server provides comprehensive QuantConnect API functionality for:
-    - Research environment operations with QuantBook
-    - Historical data retrieval and analysis
-    - Statistical analysis (PCA, cointegration, mean reversion)
-    - Portfolio optimization and risk analysis
-    - Universe selection and asset filtering
-    - Alternative data integration
+    - Project and backtest management
+    - File management within projects
+    - Authentication and API access
 
-    Use the available tools to interact with QuantConnect's research capabilities.
+    Use the available tools to interact with QuantConnect's cloud platform.
     """,
     on_duplicate_tools="error",
     dependencies=[
@@ -72,11 +64,6 @@ def main():
     register_project_tools(mcp)
     register_file_tools(mcp)
     register_backtest_tools(mcp)
-    register_quantbook_tools(mcp)
-    register_data_tools(mcp)
-    register_analysis_tools(mcp)
-    register_portfolio_tools(mcp)
-    register_universe_tools(mcp)
 
     # Register resources
     safe_print("📊 Registering system resources...")

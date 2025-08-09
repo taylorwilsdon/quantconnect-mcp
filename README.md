@@ -41,7 +41,7 @@ Out of the box, QuantConnect MCP provides you with:
 
 - **Full Project Lifecycle**: `Create`, `read`, `update`, `compile`, and manage QuantConnect projects and files programmatically.
 - **End-to-End Backtesting**: `Compile` projects, `create backtests`, `read detailed results`, and analyze `charts`, `orders`, and `insights`.
-- **Interactive Research**: Full `QuantBook` integration for dynamic financial analysis, including historical and `alternative data` retrieval.
+- **Historical Data Access**: Comprehensive data retrieval capabilities for historical and `alternative data` analysis.
 - **Advanced Analytics**: Perform `Principal Component Analysis (PCA)`, `Engle-Granger cointegration tests`, `mean-reversion analysis`, and `correlation studies`.
 - **Portfolio Optimization**: Utilize sophisticated `sparse optimization` with Huber Downward Risk minimization, calculate performance, and benchmark strategies.
 - **Universe Selection**: Dynamically `screen assets` by multiple criteria, analyze `ETF constituents`, and select assets based on correlation.
@@ -110,7 +110,7 @@ MCP_TRANSPORT=streamable-http MCP_PORT=8000 uvx quantconnect-mcp
 
 Instead of calling tools programmatically, you use natural language with a connected AI client (like Claude, a GPT, or any other MCP-compatible interface).
 
-> "Initialize a research environment, add GOOGL, AMZN, and MSFT, then run a PCA analysis on them for 2023."
+> "Add GOOGL, AMZN, and MSFT, then run a PCA analysis on them for 2023."
 
 
 ## ◈ Authentication
@@ -223,6 +223,7 @@ This MCP server is designed to be used with natural language. Below are examples
 | `read_project` | Get project details or list all | `project_id` (optional) |
 | `update_project` | Update project name/description | `project_id`, `name`, `description` |
 | `compile_project` | Compile a project for backtesting | `project_id` |
+| `read_compilation_result` | Read compilation job result | `project_id`, `compile_id` |
 
 ### ◆ File Management Tools
 
@@ -233,14 +234,6 @@ This MCP server is designed to be used with natural language. Below are examples
 | `update_file_content` | Update file content | `project_id`, `name`, `content` |
 | `update_file_name` | Rename file in project | `project_id`, `old_file_name`, `new_name` |
 
-### ◆ QuantBook Research Tools
-
-| Tool | Description | Key Parameters |
-|------|-------------|----------------|
-| `initialize_quantbook` | Create new research instance | `instance_name`, `organization_id`, `token` |
-| `list_quantbook_instances` | View all active instances | - |
-| `get_quantbook_info` | Get instance details | `instance_name` |
-| `remove_quantbook_instance` | Clean up instance | `instance_name` |
 
 ### ◆ Data Retrieval Tools
 
@@ -300,7 +293,6 @@ quantconnect-mcp/
 │       │   ├── ▪  auth_tools.py      # Authentication management
 │       │   ├── ▪  project_tools.py   # Project CRUD operations
 │       │   ├── ▪  file_tools.py      # File management
-│       │   ├── ▪  quantbook_tools.py # Research environment
 │       │   ├── ▪  data_tools.py      # Data retrieval
 │       │   ├── ▪  analysis_tools.py  # Statistical analysis
 │       │   ├── ▪  portfolio_tools.py # Portfolio optimization

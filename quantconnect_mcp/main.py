@@ -12,11 +12,6 @@ if str(package_root) not in sys.path:
 
 from quantconnect_mcp.src.server import mcp
 from quantconnect_mcp.src.tools import (
-    register_quantbook_tools,
-    register_data_tools,
-    register_analysis_tools,
-    register_portfolio_tools,
-    register_universe_tools,
     register_auth_tools,
     register_project_tools,
     register_file_tools,
@@ -52,11 +47,6 @@ def main():
     register_project_tools(mcp)
     register_file_tools(mcp)
     register_backtest_tools(mcp)
-    register_quantbook_tools(mcp)
-    register_data_tools(mcp)
-    register_analysis_tools(mcp)
-    register_portfolio_tools(mcp)
-    register_universe_tools(mcp)
 
     # Register resources
     safe_print("📊 Registering system resources...")
