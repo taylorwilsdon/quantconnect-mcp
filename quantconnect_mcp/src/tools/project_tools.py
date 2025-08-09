@@ -408,16 +408,42 @@ def register_project_tools(mcp: FastMCP):
             if response.status_code == 200:
                 data = response.json()
                 if data.get("success"):
+                    logs = data.get("logs", [])
+                    errors = data.get("errors", [])
+                    state = data.get("state")
+                    
+                    # Check for compilation warnings in logs that indicate issues
+                    warnings = []
+                    for log in logs:
+                        if "Warning" in log:
+                            warnings.append(log)
+                    
+                    # If there are warnings or explicit errors, treat as compilation failure
+                    if warnings or errors:
+                        return {
+                            "status": "error",
+                            "compile_id": data.get("compileId"),
+                            "state": state,
+                            "project_id": data.get("projectId"),
+                            "signature": data.get("signature"),
+                            "signature_order": data.get("signatureOrder", []),
+                            "logs": logs,
+                            "errors": errors,
+                            "warnings": warnings,
+                            "message": f"Compilation completed with {len(warnings)} warnings and {len(errors)} errors. Code issues must be fixed before proceeding.",
+                            "error": f"Compilation failed: {len(warnings)} warnings, {len(errors)} errors found",
+                        }
+                    
                     return {
                         "status": "success",
                         "compile_id": data.get("compileId"),
-                        "state": data.get("state"),
+                        "state": state,
                         "project_id": data.get("projectId"),
                         "signature": data.get("signature"),
                         "signature_order": data.get("signatureOrder", []),
-                        "logs": data.get("logs", []),
-                        "errors": data.get("errors", []),
-                        "message": f"Compilation result retrieved successfully. State: {data.get('state')}",
+                        "logs": logs,
+                        "errors": errors,
+                        "message": f"Compilation result retrieved successfully. State: {state}",
                     }
                 else:
                     return {

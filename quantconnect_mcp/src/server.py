@@ -22,6 +22,9 @@ mcp: FastMCP = FastMCP(
     - Project and backtest management
     - File management within projects
     - Authentication and API access
+    - Compilation and execution of code and jupyter notebooks
+
+    You must never use emojis. They will `contains invalid characters` exceptions.
 
     When writing QuantConnect code, refer to the QuantConnect documentation and platform resources for:
     - Proper import patterns and modules available on the platform
