@@ -23,6 +23,13 @@ mcp: FastMCP = FastMCP(
     - File management within projects
     - Authentication and API access
 
+    When writing QuantConnect code, refer to the QuantConnect documentation and platform resources for:
+    - Proper import patterns and modules available on the platform
+    - Algorithm class structures and inheritance requirements
+    - Available data types, resolutions, and market data APIs
+    - Portfolio management and trading methods
+    - Research environment capabilities and libraries
+
     Use the available tools to interact with QuantConnect's cloud platform.
     """,
     on_duplicate_tools="error",
