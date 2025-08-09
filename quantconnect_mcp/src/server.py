@@ -9,6 +9,7 @@ from .tools import (
     register_project_tools,
     register_file_tools,
     register_backtest_tools,
+    register_live_tools,
 )
 from .resources import register_system_resources
 from .auth import configure_auth
@@ -74,6 +75,7 @@ def main():
     register_project_tools(mcp)
     register_file_tools(mcp)
     register_backtest_tools(mcp)
+    register_live_tools(mcp)
 
     # Register resources
     safe_print("📊 Registering system resources...")
