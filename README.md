@@ -41,6 +41,7 @@ Out of the box, QuantConnect MCP provides you with:
 
 - **Full Project Lifecycle**: `Create`, `read`, `update`, `compile`, and manage QuantConnect projects and files programmatically.
 - **End-to-End Backtesting**: `Compile` projects, `create backtests`, `read detailed results`, and analyze `charts`, `orders`, and `insights`.
+- **Live Trading Management**: `Deploy`, `monitor`, `liquidate`, and `control` live algorithms with comprehensive runtime statistics and logging.
 - **Historical Data Access**: Comprehensive data retrieval capabilities for historical and `alternative data` analysis.
 - **Advanced Analytics**: Perform `Principal Component Analysis (PCA)`, `Engle-Granger cointegration tests`, `mean-reversion analysis`, and `correlation studies`.
 - **Portfolio Optimization**: Utilize sophisticated `sparse optimization` with Huber Downward Risk minimization, calculate performance, and benchmark strategies.
@@ -203,6 +204,14 @@ This MCP server is designed to be used with natural language. Below are examples
 
 > "I need to manage my QuantConnect projects. First, create a new Python project named 'My_Awesome_Strategy'. Then, create a file inside it called 'main.py' and add this code: `...your algorithm code here...`. After that, compile it and run a backtest named 'Initial Run'. When it's done, show me the performance results."
 
+### Live Trading Deployment & Monitoring
+
+> "Deploy my compiled algorithm to live trading using Interactive Brokers paper trading. Set up the brokerage configuration with my IB credentials, then monitor the runtime statistics including equity, holdings, and net profit. If the algorithm shows a loss greater than 5%, automatically liquidate all positions and stop the algorithm."
+
+### Live Algorithm Management
+
+> "Show me all my currently running live algorithms. For each one, display the runtime statistics, recent logs from the last 100 lines, and current portfolio holdings. If any algorithm has been running for more than 24 hours without trades, flag it for review."
+
 ## ◈ Comprehensive API Reference
 
 ### ◆ Authentication Tools
@@ -281,6 +290,17 @@ This MCP server is designed to be used with natural language. Below are examples
 | `read_backtest_orders` | Get order history | `project_id`, `backtest_id`, `start`, `end` |
 | `read_backtest_insights` | Get insights data | `project_id`, `backtest_id`, `start`, `end` |
 
+### ◆ Live Trading Management Tools
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `create_live_algorithm` | Deploy live algorithm with brokerage | `project_id`, `compile_id`, `node_id`, `brokerage_config` |
+| `read_live_algorithm` | Get detailed runtime statistics & status | `project_id`, `deploy_id` |
+| `liquidate_live_algorithm` | Emergency liquidation of all positions | `project_id` |
+| `stop_live_algorithm` | Stop live algorithm execution | `project_id` |
+| `list_live_algorithms` | List algorithms with status filters | `status`, `start`, `end` |
+| `read_live_logs` | Read algorithm execution logs | `project_id`, `algorithm_id`, `start_line`, `end_line` |
+
 ## ◈ Architecture
 
 ```
@@ -297,7 +317,8 @@ quantconnect-mcp/
 │       │   ├── ▪  analysis_tools.py  # Statistical analysis
 │       │   ├── ▪  portfolio_tools.py # Portfolio optimization
 │       │   ├── ▪  universe_tools.py  # Universe selection
-│       │   └── ▪  backtest_tools.py  # Backtest management
+│       │   ├── ▪  backtest_tools.py  # Backtest management
+│       │   └── ▪  live_tools.py      # Live trading management
 │       ├── ◆  auth/              # Authentication system
 │       │   ├── __init__.py
 │       │   └── quantconnect_auth.py   # Secure API authentication
