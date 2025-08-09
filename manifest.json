@@ -1,0 +1,247 @@
+{
+  "dxt_version": "0.1",
+  "name": "quantconnect-mcp",
+  "display_name": "QuantConnect MCP Server",
+  "version": "0.1.12",
+  "description": "QuantConnect platform integration with AI assistants for algorithmic trading project management, backtesting, and API access through MCP",
+  "long_description": "An MCP server that provides AI assistants with access to QuantConnect's algorithmic trading platform. Features include project management, file management, backtesting, and authentication tools for quantitative finance.",
+  "author": {
+    "name": "Taylor Wilsdon",
+    "email": "taylor@taylorwilsdon.com",
+    "url": "https://taylorwilsdon.com"
+  },
+  "homepage": "https://github.com/taylorwilsdon/quantconnect-mcp",
+  "documentation": "https://github.com/taylorwilsdon/quantconnect-mcp/blob/main/README.md",
+  "support": "https://github.com/taylorwilsdon/quantconnect-mcp/issues",
+  "server": {
+    "type": "python",
+    "entry_point": "quantconnect_mcp/__init__.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "quantconnect-mcp"
+      ],
+      "env": {
+        "QUANTCONNECT_USER_ID": "${user_config.QUANTCONNECT_USER_ID}",
+        "QUANTCONNECT_API_TOKEN": "${user_config.QUANTCONNECT_API_TOKEN}",
+        "QUANTCONNECT_ORGANIZATION_ID": "${user_config.QUANTCONNECT_ORGANIZATION_ID}",
+        "MCP_TRANSPORT": "${user_config.MCP_TRANSPORT}",
+        "MCP_HOST": "${user_config.MCP_HOST}",
+        "MCP_PORT": "${user_config.MCP_PORT}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "configure_quantconnect_auth",
+      "display_name": "Configure Authentication",
+      "description": "Configure QuantConnect API authentication credentials",
+      "category": "authentication"
+    },
+    {
+      "name": "validate_quantconnect_auth",
+      "display_name": "Validate Authentication",
+      "description": "Validate QuantConnect API credentials",
+      "category": "authentication"
+    },
+    {
+      "name": "get_auth_status",
+      "display_name": "Get Auth Status",
+      "description": "Check current authentication status",
+      "category": "authentication"
+    },
+    {
+      "name": "test_quantconnect_api",
+      "display_name": "Test API",
+      "description": "Test QuantConnect API connectivity",
+      "category": "authentication"
+    },
+    {
+      "name": "clear_quantconnect_auth",
+      "display_name": "Clear Authentication",
+      "description": "Clear stored authentication credentials",
+      "category": "authentication"
+    },
+    {
+      "name": "create_project",
+      "display_name": "Create Project",
+      "description": "Create new algorithmic trading projects in QuantConnect",
+      "category": "project_management"
+    },
+    {
+      "name": "read_project",
+      "display_name": "Read Project",
+      "description": "Get project details or list all projects",
+      "category": "project_management"
+    },
+    {
+      "name": "update_project",
+      "display_name": "Update Project",
+      "description": "Update project name and description",
+      "category": "project_management"
+    },
+    {
+      "name": "compile_project",
+      "display_name": "Compile Project",
+      "description": "Compile a project for backtesting",
+      "category": "project_management"
+    },
+    {
+      "name": "read_compilation_result",
+      "display_name": "Read Compilation Result",
+      "description": "Read the result of a compilation job",
+      "category": "project_management"
+    },
+    {
+      "name": "create_file",
+      "display_name": "Create File",
+      "description": "Create new files in QuantConnect projects",
+      "category": "file_management"
+    },
+    {
+      "name": "read_file",
+      "display_name": "Read File",
+      "description": "Read file content from QuantConnect projects",
+      "category": "file_management"
+    },
+    {
+      "name": "update_file_content",
+      "display_name": "Update File Content",
+      "description": "Update file content in QuantConnect projects",
+      "category": "file_management"
+    },
+    {
+      "name": "update_file_name",
+      "display_name": "Update File Name",
+      "description": "Rename files in QuantConnect projects",
+      "category": "file_management"
+    },
+    {
+      "name": "create_backtest",
+      "display_name": "Create Backtest",
+      "description": "Create and run backtests for algorithmic trading strategies",
+      "category": "backtest"
+    },
+    {
+      "name": "read_backtest",
+      "display_name": "Read Backtest",
+      "description": "Get backtest results and performance metrics",
+      "category": "backtest"
+    },
+    {
+      "name": "read_backtest_chart",
+      "display_name": "Read Backtest Chart",
+      "description": "Get backtest chart data",
+      "category": "backtest"
+    },
+    {
+      "name": "read_backtest_orders",
+      "display_name": "Read Backtest Orders",
+      "description": "Get backtest order history",
+      "category": "backtest"
+    },
+    {
+      "name": "read_backtest_insights",
+      "display_name": "Read Backtest Insights",
+      "description": "Get backtest insights and signals",
+      "category": "backtest"
+    }
+  ],
+  "user_config": {
+    "QUANTCONNECT_USER_ID": {
+      "type": "string",
+      "title": "QuantConnect User ID",
+      "description": "Your QuantConnect account user ID (numeric identifier)",
+      "required": true,
+      "sensitive": false,
+      "validation": {
+        "pattern": "^[0-9]+$"
+      }
+    },
+    "QUANTCONNECT_API_TOKEN": {
+      "type": "string",
+      "title": "QuantConnect API Token",
+      "description": "Your QuantConnect API token for authentication",
+      "required": true,
+      "sensitive": true,
+      "validation": {
+        "min_length": 20
+      }
+    },
+    "QUANTCONNECT_ORGANIZATION_ID": {
+      "type": "string",
+      "title": "QuantConnect Organization ID",
+      "description": "Organization ID for team accounts (optional for individual accounts)",
+      "required": false,
+      "sensitive": false,
+      "validation": {
+        "pattern": "^[a-zA-Z0-9-]+$"
+      }
+    },
+    "MCP_TRANSPORT": {
+      "type": "string",
+      "title": "MCP Transport Method",
+      "description": "Transport method for MCP communication (stdio, sse, or websocket)",
+      "required": false,
+      "sensitive": false,
+      "default": "stdio",
+      "validation": {
+        "enum": ["stdio", "sse", "websocket"]
+      }
+    },
+    "MCP_HOST": {
+      "type": "string",
+      "title": "MCP Host",
+      "description": "Host address for MCP server (only required for sse/websocket transport)",
+      "required": false,
+      "sensitive": false,
+      "default": "localhost",
+      "validation": {
+        "pattern": "^[a-zA-Z0-9.-]+$"
+      }
+    },
+    "MCP_PORT": {
+      "type": "number",
+      "title": "MCP Port",
+      "description": "Port number for MCP server (only required for sse/websocket transport)",
+      "required": false,
+      "sensitive": false,
+      "default": 3000,
+      "validation": {
+        "min": 1024,
+        "max": 65535
+      }
+    }
+  },
+  "permissions": {
+    "network": true,
+    "filesystem": {
+      "read": true,
+      "write": ["${config_dir}", "${temp_dir}"]
+    }
+  },
+  "requirements": {
+    "python": ">=3.12",
+    "platforms": ["windows", "macos", "linux"]
+  },
+  "keywords": [
+    "quantconnect",
+    "algorithmic-trading",
+    "quantitative-finance",
+    "mcp",
+    "server",
+    "backtesting",
+    "trading-strategies",
+    "api",
+    "ai-assistant",
+    "fintech"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/taylorwilsdon/quantconnect-mcp"
+  }
+}
