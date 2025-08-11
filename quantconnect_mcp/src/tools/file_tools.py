@@ -346,3 +346,78 @@ def register_file_tools(mcp: FastMCP):
                 "old_name": old_file_name,
                 "new_name": new_name,
             }
+
+    @mcp.tool()
+    async def delete_file(project_id: int, name: str) -> Dict[str, Any]:
+        """
+        Delete a file from a QuantConnect project.
+
+        Args:
+            project_id: ID of the project containing the file to delete
+            name: Name of the file to delete
+
+        Returns:
+            Dictionary containing deletion result
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {"projectId": project_id, "name": name}
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="files/delete", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "file_name": name,
+                        "message": f"Successfully deleted file '{name}' from project {project_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "File deletion failed",
+                        "details": errors,
+                        "project_id": project_id,
+                        "file_name": name,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to delete file: {str(e)}",
+                "project_id": project_id,
+                "file_name": name,
+            }

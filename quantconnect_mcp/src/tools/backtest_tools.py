@@ -562,3 +562,257 @@ def register_backtest_tools(mcp: FastMCP):
                 "start": start,
                 "end": end,
             }
+
+    @mcp.tool()
+    async def delete_backtest(project_id: int, backtest_id: str) -> Dict[str, Any]:
+        """
+        Delete a backtest from a project.
+
+        Args:
+            project_id: ID of the project containing the backtest
+            backtest_id: ID of the backtest to delete
+
+        Returns:
+            Dictionary containing deletion result
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {"projectId": project_id, "backtestId": backtest_id}
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="backtests/delete", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "backtest_id": backtest_id,
+                        "message": f"Successfully deleted backtest {backtest_id} from project {project_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Backtest deletion failed",
+                        "details": errors,
+                        "project_id": project_id,
+                        "backtest_id": backtest_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to delete backtest: {str(e)}",
+                "project_id": project_id,
+                "backtest_id": backtest_id,
+            }
+
+    @mcp.tool()
+    async def list_backtests(project_id: int) -> Dict[str, Any]:
+        """
+        List all backtests for a project.
+
+        Args:
+            project_id: ID of the project to list backtests from
+
+        Returns:
+            Dictionary containing list of backtests
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {"projectId": project_id}
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="backtests/list", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    backtests = data.get("backtests", [])
+                    
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "backtests": backtests,
+                        "total_backtests": len(backtests),
+                        "message": f"Successfully retrieved {len(backtests)} backtests from project {project_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to list backtests",
+                        "details": errors,
+                        "project_id": project_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to list backtests: {str(e)}",
+                "project_id": project_id,
+            }
+
+    @mcp.tool()
+    async def update_backtest(
+        project_id: int, 
+        backtest_id: str, 
+        name: Optional[str] = None, 
+        note: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Update a backtest's name or note.
+
+        Args:
+            project_id: ID of the project containing the backtest
+            backtest_id: ID of the backtest to update
+            name: Optional new name for the backtest
+            note: Optional new note for the backtest
+
+        Returns:
+            Dictionary containing update result
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        # Validate at least one field is provided
+        if name is None and note is None:
+            return {
+                "status": "error",
+                "error": "At least one of 'name' or 'note' must be provided for update",
+            }
+
+        try:
+            # Prepare request data
+            request_data: Dict[str, Any] = {
+                "projectId": project_id, 
+                "backtestId": backtest_id
+            }
+
+            if name is not None:
+                request_data["name"] = name
+            if note is not None:
+                request_data["note"] = note
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="backtests/update", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    update_fields = []
+                    if name is not None:
+                        update_fields.append(f"name to '{name}'")
+                    if note is not None:
+                        update_fields.append("note")
+
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "backtest_id": backtest_id,
+                        "updated_fields": update_fields,
+                        "message": f"Successfully updated backtest {backtest_id}: {', '.join(update_fields)}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Backtest update failed",
+                        "details": errors,
+                        "project_id": project_id,
+                        "backtest_id": backtest_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to update backtest: {str(e)}",
+                "project_id": project_id,
+                "backtest_id": backtest_id,
+            }

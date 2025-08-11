@@ -602,3 +602,411 @@ def register_live_tools(mcp: FastMCP):
                 "start_line": start_line,
                 "end_line": end_line,
             }
+
+    @mcp.tool()
+    async def read_live_chart(
+        project_id: int,
+        name: str,
+        count: int = 100,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Read chart data from a live algorithm.
+
+        Args:
+            project_id: Project ID of the live algorithm
+            name: Name of the chart to retrieve (e.g., "Strategy Equity")
+            count: Number of data points to request (default: 100)
+            start: Optional UTC start timestamp in seconds
+            end: Optional UTC end timestamp in seconds
+
+        Returns:
+            Dictionary containing live algorithm chart data
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {
+                "projectId": project_id,
+                "name": name,
+                "count": count,
+            }
+
+            # Add optional timestamp parameters
+            if start is not None:
+                request_data["start"] = start
+            if end is not None:
+                request_data["end"] = end
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="live/chart/read", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    # Check if chart is still loading
+                    if "progress" in data and "status" in data:
+                        progress = data.get("progress", 0)
+                        status = data.get("status", "loading")
+                        return {
+                            "status": "loading",
+                            "project_id": project_id,
+                            "chart_name": name,
+                            "progress": progress,
+                            "chart_status": status,
+                            "message": f"Chart '{name}' is loading... ({progress * 100:.1f}% complete)",
+                        }
+
+                    # Chart is ready
+                    elif "chart" in data:
+                        chart = data.get("chart")
+                        return {
+                            "status": "success",
+                            "project_id": project_id,
+                            "chart_name": name,
+                            "chart": chart,
+                            "count": count,
+                            "start": start,
+                            "end": end,
+                            "message": f"Successfully retrieved chart '{name}' from live algorithm {project_id}",
+                        }
+
+                    else:
+                        return {
+                            "status": "error",
+                            "error": "Unexpected response format - no chart or progress data found",
+                        }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to read live algorithm chart",
+                        "details": errors,
+                        "project_id": project_id,
+                        "chart_name": name,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to read live algorithm chart: {str(e)}",
+                "project_id": project_id,
+                "chart_name": name,
+            }
+
+    @mcp.tool()
+    async def read_live_portfolio(project_id: int) -> Dict[str, Any]:
+        """
+        Read portfolio state from a live algorithm.
+
+        Args:
+            project_id: Project ID of the live algorithm
+
+        Returns:
+            Dictionary containing live algorithm portfolio state
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {"projectId": project_id}
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="live/portfolio/read", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    portfolio = data.get("portfolio", {})
+                    
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "portfolio": portfolio,
+                        "message": f"Successfully retrieved portfolio state from live algorithm {project_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to read live algorithm portfolio",
+                        "details": errors,
+                        "project_id": project_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to read live algorithm portfolio: {str(e)}",
+                "project_id": project_id,
+            }
+
+    @mcp.tool()
+    async def read_live_orders(
+        project_id: int, start: int = 0, end: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Read orders from a live algorithm.
+
+        Args:
+            project_id: Project ID of the live algorithm
+            start: Starting index of orders to fetch (default: 0)
+            end: Last index of orders to fetch (default: 100, max range: 100)
+
+        Returns:
+            Dictionary containing live algorithm orders data
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        # Validate range
+        if end - start > 100:
+            return {
+                "status": "error",
+                "error": "Range too large: end - start must be less than or equal to 100",
+            }
+
+        if start < 0 or end < 0:
+            return {
+                "status": "error",
+                "error": "Start and end indices must be non-negative",
+            }
+
+        if start >= end:
+            return {
+                "status": "error",
+                "error": "Start index must be less than end index",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {
+                "projectId": project_id,
+                "start": start,
+                "end": end,
+            }
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="live/orders/read", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    orders = data.get("orders", {})
+                    length = data.get("length", 0)
+
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "start": start,
+                        "end": end,
+                        "orders": orders,
+                        "length": length,
+                        "message": f"Successfully retrieved {length} orders from live algorithm {project_id} (range: {start}-{end})",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to read live algorithm orders",
+                        "details": errors,
+                        "project_id": project_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to read live algorithm orders: {str(e)}",
+                "project_id": project_id,
+                "start": start,
+                "end": end,
+            }
+
+    @mcp.tool()
+    async def read_live_insights(
+        project_id: int, start: int = 0, end: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Read insights from a live algorithm.
+
+        Args:
+            project_id: Project ID of the live algorithm
+            start: Starting index of insights to fetch (default: 0)
+            end: Last index of insights to fetch (default: 100, max range: 100)
+
+        Returns:
+            Dictionary containing live algorithm insights data
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        # Validate range
+        if end - start > 100:
+            return {
+                "status": "error",
+                "error": "Range too large: end - start must be less than or equal to 100",
+            }
+
+        if start < 0 or end < 0:
+            return {
+                "status": "error",
+                "error": "Start and end indices must be non-negative",
+            }
+
+        if start >= end:
+            return {
+                "status": "error",
+                "error": "Start index must be less than end index",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {
+                "projectId": project_id,
+                "start": start,
+                "end": end,
+            }
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="live/read/insights", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    insights = data.get("insights", [])
+                    length = data.get("length", 0)
+
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "start": start,
+                        "end": end,
+                        "insights": insights,
+                        "length": length,
+                        "message": f"Successfully retrieved {length} insights from live algorithm {project_id} (range: {start}-{end})",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to read live algorithm insights",
+                        "details": errors,
+                        "project_id": project_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to read live algorithm insights: {str(e)}",
+                "project_id": project_id,
+                "start": start,
+                "end": end,
+            }

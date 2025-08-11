@@ -243,3 +243,149 @@ def register_auth_tools(mcp: FastMCP):
                 "error": str(e),
                 "message": "Failed to get authentication header information",
             }
+
+    @mcp.tool()
+    async def read_account() -> Dict[str, Any]:
+        """
+        Read the organization account status.
+
+        Returns:
+            Dictionary containing account status and information
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="account/read", method="POST"
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    account = data.get("account", {})
+                    
+                    return {
+                        "status": "success",
+                        "account": account,
+                        "message": "Successfully retrieved account information",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to read account information",
+                        "details": errors,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to read account: {str(e)}",
+            }
+
+    @mcp.tool()
+    async def authorize_connection(
+        brokerage_id: str, 
+        credentials: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Authorize an external connection with a live brokerage or data provider.
+
+        Args:
+            brokerage_id: Brokerage identifier (e.g., "InteractiveBrokersBrokerage")
+            credentials: Dictionary containing brokerage-specific credentials
+
+        Returns:
+            Dictionary containing authorization result
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {
+                "id": brokerage_id,
+                **credentials  # Spread credentials into the request data
+            }
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="live/connection/authorize", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    connection = data.get("connection", {})
+                    
+                    return {
+                        "status": "success",
+                        "brokerage_id": brokerage_id,
+                        "connection": connection,
+                        "message": f"Successfully authorized connection to {brokerage_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to authorize connection",
+                        "details": errors,
+                        "brokerage_id": brokerage_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to authorize connection: {str(e)}",
+                "brokerage_id": brokerage_id,
+            }

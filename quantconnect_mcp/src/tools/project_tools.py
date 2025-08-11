@@ -471,3 +471,62 @@ def register_project_tools(mcp: FastMCP):
                 "project_id": project_id,
                 "compile_id": compile_id,
             }
+
+    @mcp.tool()
+    async def delete_project(project_id: int) -> Dict[str, Any]:
+        """
+        Delete a project from QuantConnect.
+
+        Args:
+            project_id: The ID of the project to delete.
+
+        Returns:
+            A dictionary containing the deletion result.
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {"projectId": project_id}
+            
+            response = await auth.make_authenticated_request(
+                endpoint="projects/delete", method="POST", json=request_data
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "message": f"Successfully deleted project {project_id}.",
+                    }
+                else:
+                    return {
+                        "status": "error",
+                        "error": "Project deletion failed.",
+                        "details": data.get("errors", []),
+                        "project_id": project_id,
+                    }
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": response.text[:500] if hasattr(response, "text") else "No response text",
+                }
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"An unexpected error occurred: {e}",
+                "project_id": project_id,
+            }

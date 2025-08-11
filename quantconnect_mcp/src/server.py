@@ -10,6 +10,7 @@ from .tools import (
     register_file_tools,
     register_backtest_tools,
     register_live_tools,
+    register_optimization_tools,
 )
 from .auth import configure_auth
 from .utils import safe_print
@@ -75,6 +76,7 @@ def main():
     register_file_tools(mcp)
     register_backtest_tools(mcp)
     register_live_tools(mcp)
+    register_optimization_tools(mcp)
 
 
     safe_print(f"✅ QuantConnect MCP Server initialized")
