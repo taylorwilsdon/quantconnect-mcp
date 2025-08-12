@@ -13,6 +13,10 @@
 
 *Integrate QuantConnect's research environment, statistical analysis, and portfolio optimization into your AI workflows. Locally hosted, secure & capable of dramatically improving productivity*
 
+<a href="https://glama.ai/mcp/servers/@taylorwilsdon/quantconnect-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@taylorwilsdon/quantconnect-mcp/badge" alt="QuantConnect Server MCP server" />
+</a>
+
 [◉ Quick Start](#-quick-start) •
 [◉ Documentation](#-comprehensive-api-reference) •
 [◉ Architecture](#-architecture) •
@@ -50,7 +54,7 @@ Out of the box, QuantConnect MCP provides you with:
 - **High-Performance Core**: Built with an `async-first` design for concurrent data processing and responsiveness.
 - **AI-Native Interface**: Designed for seamless interaction via `natural language` in advanced AI clients.
 
-## ◉ Table of Contents
+## ◈ Table of Contents
 
 - [◈ Quick Start](#-quick-start)
 - [◈ Authentication](#-authentication)
