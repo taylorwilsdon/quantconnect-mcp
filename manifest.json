@@ -28,9 +28,6 @@
         "QUANTCONNECT_USER_ID": "${user_config.QUANTCONNECT_USER_ID}",
         "QUANTCONNECT_API_TOKEN": "${user_config.QUANTCONNECT_API_TOKEN}",
         "QUANTCONNECT_ORGANIZATION_ID": "${user_config.QUANTCONNECT_ORGANIZATION_ID}",
-        "MCP_TRANSPORT": "${user_config.MCP_TRANSPORT}",
-        "MCP_HOST": "${user_config.MCP_HOST}",
-        "MCP_PORT": "${user_config.MCP_PORT}"
       }
     }
   },
