@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "quantconnect-mcp",
   "display_name": "QuantConnect MCP Server",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "QuantConnect platform integration with AI assistants for algorithmic trading project management, backtesting, and API access through MCP",
   "long_description": "An MCP server that provides AI assistants with access to QuantConnect's algorithmic trading platform. Features include project management, file management, backtesting, and authentication tools for quantitative finance.",
   "author": {
