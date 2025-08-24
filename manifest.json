@@ -27,7 +27,7 @@
       "env": {
         "QUANTCONNECT_USER_ID": "${user_config.QUANTCONNECT_USER_ID}",
         "QUANTCONNECT_API_TOKEN": "${user_config.QUANTCONNECT_API_TOKEN}",
-        "QUANTCONNECT_ORGANIZATION_ID": "${user_config.QUANTCONNECT_ORGANIZATION_ID}",
+        "QUANTCONNECT_ORGANIZATION_ID": "${user_config.QUANTCONNECT_ORGANIZATION_ID}"
       }
     }
   },
