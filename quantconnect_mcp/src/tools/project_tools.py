@@ -533,15 +533,16 @@ def register_project_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def create_project_collaborator(
-        project_id: int, email: str, permission: str = "read"
+        project_id: int, collaborator_user_id: str, collaboration_write: bool = True, collaboration_live_control: bool = False
     ) -> Dict[str, Any]:
         """
         Add a collaborator to a project.
 
         Args:
             project_id: ID of the project to add collaborator to
-            email: Email address of the user to add as collaborator
-            permission: Permission level ("read" or "write", default: "read")
+            collaborator_user_id: User ID of the user to add as collaborator (from profile URL)
+            collaboration_write: Grant write permission (default: True)
+            collaboration_live_control: Grant live control permission (default: False)
 
         Returns:
             Dictionary containing collaborator addition result
@@ -553,25 +554,18 @@ def register_project_tools(mcp: FastMCP):
                 "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
-        # Validate permission parameter
-        valid_permissions = ["read", "write"]
-        if permission not in valid_permissions:
-            return {
-                "status": "error",
-                "error": f"Invalid permission '{permission}'. Must be one of: {valid_permissions}",
-            }
-
         try:
             # Prepare request data
             request_data = {
                 "projectId": project_id,
-                "email": email,
-                "permission": permission,
+                "collaboratorUserId": collaborator_user_id,
+                "collaborationWrite": collaboration_write,
+                "collaborationLiveControl": collaboration_live_control,
             }
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="projects/collaborators/create", method="POST", json=request_data
+                endpoint="projects/collaboration/create", method="POST", json=request_data
             )
 
             # Parse response
@@ -582,9 +576,10 @@ def register_project_tools(mcp: FastMCP):
                     return {
                         "status": "success",
                         "project_id": project_id,
-                        "collaborator_email": email,
-                        "permission": permission,
-                        "message": f"Successfully added collaborator {email} with {permission} permission to project {project_id}",
+                        "collaborator_user_id": collaborator_user_id,
+                        "collaboration_write": collaboration_write,
+                        "collaboration_live_control": collaboration_live_control,
+                        "message": f"Successfully added collaborator {collaborator_user_id} to project {project_id}",
                     }
                 else:
                     # API returned success=false
@@ -594,7 +589,7 @@ def register_project_tools(mcp: FastMCP):
                         "error": "Failed to add project collaborator",
                         "details": errors,
                         "project_id": project_id,
-                        "email": email,
+                        "collaborator_user_id": collaborator_user_id,
                     }
 
             elif response.status_code == 401:
@@ -619,7 +614,7 @@ def register_project_tools(mcp: FastMCP):
                 "status": "error",
                 "error": f"Failed to add project collaborator: {str(e)}",
                 "project_id": project_id,
-                "email": email,
+                "collaborator_user_id": collaborator_user_id,
             }
 
     @mcp.tool()
@@ -646,7 +641,7 @@ def register_project_tools(mcp: FastMCP):
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="projects/collaborators/read", method="POST", json=request_data
+                endpoint="projects/collaboration/read", method="POST", json=request_data
             )
 
             # Parse response
@@ -699,15 +694,15 @@ def register_project_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def update_project_collaborator(
-        project_id: int, user_id: int, permission: str
+        project_id: int, collaborator_user_id: str, live_control: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
-        Update collaborator information in a project.
+        Update collaborator permissions in a project.
 
         Args:
             project_id: ID of the project containing the collaborator
-            user_id: User ID of the collaborator to update
-            permission: New permission level ("read" or "write")
+            collaborator_user_id: User ID of the collaborator to update
+            live_control: Whether to grant live control permission (optional)
 
         Returns:
             Dictionary containing update result
@@ -719,25 +714,19 @@ def register_project_tools(mcp: FastMCP):
                 "error": "QuantConnect authentication not configured. Use configure_auth() first.",
             }
 
-        # Validate permission parameter
-        valid_permissions = ["read", "write"]
-        if permission not in valid_permissions:
-            return {
-                "status": "error",
-                "error": f"Invalid permission '{permission}'. Must be one of: {valid_permissions}",
-            }
-
         try:
             # Prepare request data
             request_data = {
                 "projectId": project_id,
-                "userId": user_id,
-                "permission": permission,
+                "collaboratorUserId": collaborator_user_id,
             }
+            
+            if live_control is not None:
+                request_data["liveControl"] = live_control
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="projects/collaborators/update", method="POST", json=request_data
+                endpoint="projects/collaboration/update", method="POST", json=request_data
             )
 
             # Parse response
@@ -748,9 +737,9 @@ def register_project_tools(mcp: FastMCP):
                     return {
                         "status": "success",
                         "project_id": project_id,
-                        "user_id": user_id,
-                        "permission": permission,
-                        "message": f"Successfully updated collaborator {user_id} permission to {permission} for project {project_id}",
+                        "collaborator_user_id": collaborator_user_id,
+                        "live_control": live_control,
+                        "message": f"Successfully updated collaborator {collaborator_user_id} for project {project_id}",
                     }
                 else:
                     # API returned success=false
@@ -760,7 +749,7 @@ def register_project_tools(mcp: FastMCP):
                         "error": "Failed to update project collaborator",
                         "details": errors,
                         "project_id": project_id,
-                        "user_id": user_id,
+                        "collaborator_user_id": collaborator_user_id,
                     }
 
             elif response.status_code == 401:
@@ -785,19 +774,19 @@ def register_project_tools(mcp: FastMCP):
                 "status": "error",
                 "error": f"Failed to update project collaborator: {str(e)}",
                 "project_id": project_id,
-                "user_id": user_id,
+                "collaborator_user_id": collaborator_user_id,
             }
 
     @mcp.tool()
     async def delete_project_collaborator(
-        project_id: int, user_id: int
+        project_id: int, collaborator_user_id: str
     ) -> Dict[str, Any]:
         """
         Remove a collaborator from a project.
 
         Args:
             project_id: ID of the project to remove collaborator from
-            user_id: User ID of the collaborator to remove
+            collaborator_user_id: User ID of the collaborator to remove
 
         Returns:
             Dictionary containing removal result
@@ -813,12 +802,12 @@ def register_project_tools(mcp: FastMCP):
             # Prepare request data
             request_data = {
                 "projectId": project_id,
-                "userId": user_id,
+                "collaboratorUserId": collaborator_user_id,
             }
 
             # Make API request
             response = await auth.make_authenticated_request(
-                endpoint="projects/collaborators/delete", method="POST", json=request_data
+                endpoint="projects/collaboration/delete", method="POST", json=request_data
             )
 
             # Parse response
@@ -829,8 +818,8 @@ def register_project_tools(mcp: FastMCP):
                     return {
                         "status": "success",
                         "project_id": project_id,
-                        "user_id": user_id,
-                        "message": f"Successfully removed collaborator {user_id} from project {project_id}",
+                        "collaborator_user_id": collaborator_user_id,
+                        "message": f"Successfully removed collaborator {collaborator_user_id} from project {project_id}",
                     }
                 else:
                     # API returned success=false
@@ -840,7 +829,7 @@ def register_project_tools(mcp: FastMCP):
                         "error": "Failed to remove project collaborator",
                         "details": errors,
                         "project_id": project_id,
-                        "user_id": user_id,
+                        "collaborator_user_id": collaborator_user_id,
                     }
 
             elif response.status_code == 401:
@@ -865,7 +854,7 @@ def register_project_tools(mcp: FastMCP):
                 "status": "error",
                 "error": f"Failed to remove project collaborator: {str(e)}",
                 "project_id": project_id,
-                "user_id": user_id,
+                "collaborator_user_id": collaborator_user_id,
             }
 
     @mcp.tool()
