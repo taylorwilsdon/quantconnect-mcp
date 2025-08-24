@@ -254,30 +254,6 @@
       "description": "Organization ID for team accounts (optional for individual accounts)",
       "required": false,
       "sensitive": false
-    },
-    "MCP_TRANSPORT": {
-      "type": "string",
-      "title": "MCP Transport Method",
-      "description": "Transport method for MCP communication (stdio, sse, or websocket)",
-      "required": false,
-      "sensitive": false,
-      "default": "stdio"
-    },
-    "MCP_HOST": {
-      "type": "string",
-      "title": "MCP Host",
-      "description": "Host address for MCP server (only required for sse/websocket transport)",
-      "required": false,
-      "sensitive": false,
-      "default": "localhost"
-    },
-    "MCP_PORT": {
-      "type": "number",
-      "title": "MCP Port",
-      "description": "Port number for MCP server (only required for sse/websocket transport)",
-      "required": false,
-      "sensitive": false,
-      "default": 3000
     }
   },
   "keywords": [

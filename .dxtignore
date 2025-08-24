@@ -50,8 +50,6 @@ Documentation/
 
 # ---- Non-main branch files ----------------------------------------
 lean-cli/
-quantconnect_mcp/src/problematicdiff.txt*
-quantconnect_mcp/src/tools/optimization_tools.py
 refac_add.md
 
 # ---- Temporary & Build Files ------------------------------------------
