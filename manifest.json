@@ -56,6 +56,18 @@
       "description": "Clear stored authentication credentials"
     },
     {
+      "name": "get_auth_header",
+      "description": "Get authentication header for API requests"
+    },
+    {
+      "name": "read_account",
+      "description": "Read organization account status and information"
+    },
+    {
+      "name": "authorize_connection",
+      "description": "Authorize external connection with live brokerage or data provider"
+    },
+    {
       "name": "create_project",
       "description": "Create new algorithmic trading projects in QuantConnect"
     },
@@ -76,6 +88,34 @@
       "description": "Read the result of a compilation job"
     },
     {
+      "name": "delete_project",
+      "description": "Delete a project from QuantConnect"
+    },
+    {
+      "name": "create_project_collaborator",
+      "description": "Add a collaborator to a project"
+    },
+    {
+      "name": "read_project_collaborators",
+      "description": "List all collaborators on a project"
+    },
+    {
+      "name": "update_project_collaborator",
+      "description": "Update collaborator information in a project"
+    },
+    {
+      "name": "delete_project_collaborator",
+      "description": "Remove a collaborator from a project"
+    },
+    {
+      "name": "read_project_nodes",
+      "description": "Read available and selected nodes of a project"
+    },
+    {
+      "name": "update_project_nodes",
+      "description": "Update the active state of project nodes"
+    },
+    {
       "name": "create_file",
       "description": "Create new files in QuantConnect projects"
     },
@@ -90,6 +130,10 @@
     {
       "name": "update_file_name",
       "description": "Rename files in QuantConnect projects"
+    },
+    {
+      "name": "delete_file",
+      "description": "Delete a file from a QuantConnect project"
     },
     {
       "name": "create_backtest",
@@ -110,6 +154,86 @@
     {
       "name": "read_backtest_insights",
       "description": "Get backtest insights and signals"
+    },
+    {
+      "name": "delete_backtest",
+      "description": "Delete a backtest from a project"
+    },
+    {
+      "name": "list_backtests",
+      "description": "List all backtests for a project"
+    },
+    {
+      "name": "update_backtest",
+      "description": "Update a backtest's name or note"
+    },
+    {
+      "name": "create_live_algorithm",
+      "description": "Create a live algorithm deployment"
+    },
+    {
+      "name": "read_live_algorithm",
+      "description": "Read comprehensive live algorithm statistics and data"
+    },
+    {
+      "name": "liquidate_live_algorithm",
+      "description": "Liquidate all positions in a live algorithm"
+    },
+    {
+      "name": "stop_live_algorithm",
+      "description": "Stop a live algorithm"
+    },
+    {
+      "name": "list_live_algorithms",
+      "description": "List live algorithms with optional filters"
+    },
+    {
+      "name": "read_live_logs",
+      "description": "Read logs from a live algorithm"
+    },
+    {
+      "name": "read_live_chart",
+      "description": "Read chart data from a live algorithm"
+    },
+    {
+      "name": "read_live_portfolio",
+      "description": "Read portfolio state from a live algorithm"
+    },
+    {
+      "name": "read_live_orders",
+      "description": "Read orders from a live algorithm"
+    },
+    {
+      "name": "read_live_insights",
+      "description": "Read insights from a live algorithm"
+    },
+    {
+      "name": "estimate_optimization_time",
+      "description": "Estimate execution time of optimization with specified parameters"
+    },
+    {
+      "name": "create_optimization",
+      "description": "Create an optimization with specified parameters"
+    },
+    {
+      "name": "read_optimization",
+      "description": "Read an optimization by its ID"
+    },
+    {
+      "name": "list_optimizations",
+      "description": "List all optimizations for a project"
+    },
+    {
+      "name": "update_optimization",
+      "description": "Update the name of an optimization"
+    },
+    {
+      "name": "abort_optimization",
+      "description": "Abort an optimization that is currently running"
+    },
+    {
+      "name": "delete_optimization",
+      "description": "Delete an optimization"
     }
   ],
   "user_config": {
