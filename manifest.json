@@ -37,117 +37,79 @@
   "tools": [
     {
       "name": "configure_quantconnect_auth",
-      "display_name": "Configure Authentication",
-      "description": "Configure QuantConnect API authentication credentials",
-      "category": "authentication"
+      "description": "Configure QuantConnect API authentication credentials"
     },
     {
       "name": "validate_quantconnect_auth",
-      "display_name": "Validate Authentication",
-      "description": "Validate QuantConnect API credentials",
-      "category": "authentication"
+      "description": "Validate QuantConnect API credentials"
     },
     {
       "name": "get_auth_status",
-      "display_name": "Get Auth Status",
-      "description": "Check current authentication status",
-      "category": "authentication"
+      "description": "Check current authentication status"
     },
     {
       "name": "test_quantconnect_api",
-      "display_name": "Test API",
-      "description": "Test QuantConnect API connectivity",
-      "category": "authentication"
+      "description": "Test QuantConnect API connectivity"
     },
     {
       "name": "clear_quantconnect_auth",
-      "display_name": "Clear Authentication",
-      "description": "Clear stored authentication credentials",
-      "category": "authentication"
+      "description": "Clear stored authentication credentials"
     },
     {
       "name": "create_project",
-      "display_name": "Create Project",
-      "description": "Create new algorithmic trading projects in QuantConnect",
-      "category": "project_management"
+      "description": "Create new algorithmic trading projects in QuantConnect"
     },
     {
       "name": "read_project",
-      "display_name": "Read Project",
-      "description": "Get project details or list all projects",
-      "category": "project_management"
+      "description": "Get project details or list all projects"
     },
     {
       "name": "update_project",
-      "display_name": "Update Project",
-      "description": "Update project name and description",
-      "category": "project_management"
+      "description": "Update project name and description"
     },
     {
       "name": "compile_project",
-      "display_name": "Compile Project",
-      "description": "Compile a project for backtesting",
-      "category": "project_management"
+      "description": "Compile a project for backtesting"
     },
     {
       "name": "read_compilation_result",
-      "display_name": "Read Compilation Result",
-      "description": "Read the result of a compilation job",
-      "category": "project_management"
+      "description": "Read the result of a compilation job"
     },
     {
       "name": "create_file",
-      "display_name": "Create File",
-      "description": "Create new files in QuantConnect projects",
-      "category": "file_management"
+      "description": "Create new files in QuantConnect projects"
     },
     {
       "name": "read_file",
-      "display_name": "Read File",
-      "description": "Read file content from QuantConnect projects",
-      "category": "file_management"
+      "description": "Read file content from QuantConnect projects"
     },
     {
       "name": "update_file_content",
-      "display_name": "Update File Content",
-      "description": "Update file content in QuantConnect projects",
-      "category": "file_management"
+      "description": "Update file content in QuantConnect projects"
     },
     {
       "name": "update_file_name",
-      "display_name": "Update File Name",
-      "description": "Rename files in QuantConnect projects",
-      "category": "file_management"
+      "description": "Rename files in QuantConnect projects"
     },
     {
       "name": "create_backtest",
-      "display_name": "Create Backtest",
-      "description": "Create and run backtests for algorithmic trading strategies",
-      "category": "backtest"
+      "description": "Create and run backtests for algorithmic trading strategies"
     },
     {
       "name": "read_backtest",
-      "display_name": "Read Backtest",
-      "description": "Get backtest results and performance metrics",
-      "category": "backtest"
+      "description": "Get backtest results and performance metrics"
     },
     {
       "name": "read_backtest_chart",
-      "display_name": "Read Backtest Chart",
-      "description": "Get backtest chart data",
-      "category": "backtest"
+      "description": "Get backtest chart data"
     },
     {
       "name": "read_backtest_orders",
-      "display_name": "Read Backtest Orders",
-      "description": "Get backtest order history",
-      "category": "backtest"
+      "description": "Get backtest order history"
     },
     {
       "name": "read_backtest_insights",
-      "display_name": "Read Backtest Insights",
-      "description": "Get backtest insights and signals",
-      "category": "backtest"
+      "description": "Get backtest insights and signals"
     }
   ],
   "user_config": {
@@ -156,30 +118,21 @@
       "title": "QuantConnect User ID",
       "description": "Your QuantConnect account user ID (numeric identifier)",
       "required": true,
-      "sensitive": false,
-      "validation": {
-        "pattern": "^[0-9]+$"
-      }
+      "sensitive": false
     },
     "QUANTCONNECT_API_TOKEN": {
       "type": "string",
       "title": "QuantConnect API Token",
       "description": "Your QuantConnect API token for authentication",
       "required": true,
-      "sensitive": true,
-      "validation": {
-        "min_length": 20
-      }
+      "sensitive": true
     },
     "QUANTCONNECT_ORGANIZATION_ID": {
       "type": "string",
       "title": "QuantConnect Organization ID",
       "description": "Organization ID for team accounts (optional for individual accounts)",
       "required": false,
-      "sensitive": false,
-      "validation": {
-        "pattern": "^[a-zA-Z0-9-]+$"
-      }
+      "sensitive": false
     },
     "MCP_TRANSPORT": {
       "type": "string",
@@ -187,14 +140,7 @@
       "description": "Transport method for MCP communication (stdio, sse, or websocket)",
       "required": false,
       "sensitive": false,
-      "default": "stdio",
-      "validation": {
-        "enum": [
-          "stdio",
-          "sse",
-          "websocket"
-        ]
-      }
+      "default": "stdio"
     },
     "MCP_HOST": {
       "type": "string",
@@ -202,10 +148,7 @@
       "description": "Host address for MCP server (only required for sse/websocket transport)",
       "required": false,
       "sensitive": false,
-      "default": "localhost",
-      "validation": {
-        "pattern": "^[a-zA-Z0-9.-]+$"
-      }
+      "default": "localhost"
     },
     "MCP_PORT": {
       "type": "number",
@@ -213,30 +156,8 @@
       "description": "Port number for MCP server (only required for sse/websocket transport)",
       "required": false,
       "sensitive": false,
-      "default": 3000,
-      "validation": {
-        "min": 1024,
-        "max": 65535
-      }
+      "default": 3000
     }
-  },
-  "permissions": {
-    "network": true,
-    "filesystem": {
-      "read": true,
-      "write": [
-        "${config_dir}",
-        "${temp_dir}"
-      ]
-    }
-  },
-  "requirements": {
-    "python": ">=3.12",
-    "platforms": [
-      "windows",
-      "macos",
-      "linux"
-    ]
   },
   "keywords": [
     "quantconnect",

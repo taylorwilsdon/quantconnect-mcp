@@ -10,6 +10,7 @@ release.py
 *.egg-info/
 build/
 dist/
+*.dxt
 
 # ---- Environments & tooling -------------------------------------------
 .env
@@ -42,11 +43,16 @@ planning_docs/
 changes.diff
 *.diff
 *.patch
+tests/
+
+# ---- Documentation (separate repo) ------------------------------------
+Documentation/
 
 # ---- Non-main branch files ----------------------------------------
 lean-cli/
-tests/test_*.py
 quantconnect_mcp/src/problematicdiff.txt*
+quantconnect_mcp/src/tools/optimization_tools.py
+refac_add.md
 
 # ---- Temporary & Build Files ------------------------------------------
 *.tmp
@@ -55,5 +61,8 @@ quantconnect_mcp/src/problematicdiff.txt*
 *.swp
 *.swo
 *~
+
+# ---- Lock files -------------------------------------------------------
+uv.lock
 
 

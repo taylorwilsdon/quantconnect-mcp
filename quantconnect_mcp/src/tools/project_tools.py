@@ -530,3 +530,495 @@ def register_project_tools(mcp: FastMCP):
                 "error": f"An unexpected error occurred: {e}",
                 "project_id": project_id,
             }
+
+    @mcp.tool()
+    async def create_project_collaborator(
+        project_id: int, email: str, permission: str = "read"
+    ) -> Dict[str, Any]:
+        """
+        Add a collaborator to a project.
+
+        Args:
+            project_id: ID of the project to add collaborator to
+            email: Email address of the user to add as collaborator
+            permission: Permission level ("read" or "write", default: "read")
+
+        Returns:
+            Dictionary containing collaborator addition result
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        # Validate permission parameter
+        valid_permissions = ["read", "write"]
+        if permission not in valid_permissions:
+            return {
+                "status": "error",
+                "error": f"Invalid permission '{permission}'. Must be one of: {valid_permissions}",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {
+                "projectId": project_id,
+                "email": email,
+                "permission": permission,
+            }
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="projects/collaborators/create", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "collaborator_email": email,
+                        "permission": permission,
+                        "message": f"Successfully added collaborator {email} with {permission} permission to project {project_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to add project collaborator",
+                        "details": errors,
+                        "project_id": project_id,
+                        "email": email,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to add project collaborator: {str(e)}",
+                "project_id": project_id,
+                "email": email,
+            }
+
+    @mcp.tool()
+    async def read_project_collaborators(project_id: int) -> Dict[str, Any]:
+        """
+        List all collaborators on a project.
+
+        Args:
+            project_id: ID of the project to list collaborators for
+
+        Returns:
+            Dictionary containing list of project collaborators
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {"projectId": project_id}
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="projects/collaborators/read", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    collaborators = data.get("collaborators", [])
+                    
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "collaborators": collaborators,
+                        "total_collaborators": len(collaborators),
+                        "message": f"Successfully retrieved {len(collaborators)} collaborators for project {project_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to read project collaborators",
+                        "details": errors,
+                        "project_id": project_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to read project collaborators: {str(e)}",
+                "project_id": project_id,
+            }
+
+    @mcp.tool()
+    async def update_project_collaborator(
+        project_id: int, user_id: int, permission: str
+    ) -> Dict[str, Any]:
+        """
+        Update collaborator information in a project.
+
+        Args:
+            project_id: ID of the project containing the collaborator
+            user_id: User ID of the collaborator to update
+            permission: New permission level ("read" or "write")
+
+        Returns:
+            Dictionary containing update result
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        # Validate permission parameter
+        valid_permissions = ["read", "write"]
+        if permission not in valid_permissions:
+            return {
+                "status": "error",
+                "error": f"Invalid permission '{permission}'. Must be one of: {valid_permissions}",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {
+                "projectId": project_id,
+                "userId": user_id,
+                "permission": permission,
+            }
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="projects/collaborators/update", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "user_id": user_id,
+                        "permission": permission,
+                        "message": f"Successfully updated collaborator {user_id} permission to {permission} for project {project_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to update project collaborator",
+                        "details": errors,
+                        "project_id": project_id,
+                        "user_id": user_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to update project collaborator: {str(e)}",
+                "project_id": project_id,
+                "user_id": user_id,
+            }
+
+    @mcp.tool()
+    async def delete_project_collaborator(
+        project_id: int, user_id: int
+    ) -> Dict[str, Any]:
+        """
+        Remove a collaborator from a project.
+
+        Args:
+            project_id: ID of the project to remove collaborator from
+            user_id: User ID of the collaborator to remove
+
+        Returns:
+            Dictionary containing removal result
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {
+                "projectId": project_id,
+                "userId": user_id,
+            }
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="projects/collaborators/delete", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "user_id": user_id,
+                        "message": f"Successfully removed collaborator {user_id} from project {project_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to remove project collaborator",
+                        "details": errors,
+                        "project_id": project_id,
+                        "user_id": user_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to remove project collaborator: {str(e)}",
+                "project_id": project_id,
+                "user_id": user_id,
+            }
+
+    @mcp.tool()
+    async def read_project_nodes(project_id: int) -> Dict[str, Any]:
+        """
+        Read the available and selected nodes of a project.
+
+        Args:
+            project_id: ID of the project to read nodes for
+
+        Returns:
+            Dictionary containing project node information
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {"projectId": project_id}
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="projects/nodes/read", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    nodes = data.get("nodes", {})
+                    
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "nodes": nodes,
+                        "message": f"Successfully retrieved node information for project {project_id}",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to read project nodes",
+                        "details": errors,
+                        "project_id": project_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to read project nodes: {str(e)}",
+                "project_id": project_id,
+            }
+
+    @mcp.tool()
+    async def update_project_nodes(
+        project_id: int, nodes: Dict[str, bool]
+    ) -> Dict[str, Any]:
+        """
+        Update the active state of the given nodes to true.
+
+        Args:
+            project_id: ID of the project to update nodes for
+            nodes: Dictionary mapping node IDs to their active state (true/false)
+
+        Returns:
+            Dictionary containing update result
+        """
+        auth = get_auth_instance()
+        if auth is None:
+            return {
+                "status": "error",
+                "error": "QuantConnect authentication not configured. Use configure_auth() first.",
+            }
+
+        try:
+            # Prepare request data
+            request_data = {
+                "projectId": project_id,
+                "nodes": nodes,
+            }
+
+            # Make API request
+            response = await auth.make_authenticated_request(
+                endpoint="projects/nodes/update", method="POST", json=request_data
+            )
+
+            # Parse response
+            if response.status_code == 200:
+                data = response.json()
+
+                if data.get("success", False):
+                    active_nodes = [node_id for node_id, active in nodes.items() if active]
+                    
+                    return {
+                        "status": "success",
+                        "project_id": project_id,
+                        "updated_nodes": nodes,
+                        "active_nodes": active_nodes,
+                        "message": f"Successfully updated {len(nodes)} node(s) for project {project_id}, {len(active_nodes)} now active",
+                    }
+                else:
+                    # API returned success=false
+                    errors = data.get("errors", ["Unknown error"])
+                    return {
+                        "status": "error",
+                        "error": "Failed to update project nodes",
+                        "details": errors,
+                        "project_id": project_id,
+                    }
+
+            elif response.status_code == 401:
+                return {
+                    "status": "error",
+                    "error": "Authentication failed. Check your credentials and ensure they haven't expired.",
+                }
+
+            else:
+                return {
+                    "status": "error",
+                    "error": f"API request failed with status {response.status_code}",
+                    "response_text": (
+                        response.text[:500]
+                        if hasattr(response, "text")
+                        else "No response text"
+                    ),
+                }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to update project nodes: {str(e)}",
+                "project_id": project_id,
+            }
