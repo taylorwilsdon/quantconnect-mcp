@@ -2,9 +2,9 @@
   "dxt_version": "0.1",
   "name": "quantconnect-mcp",
   "display_name": "QuantConnect MCP Server",
-  "version": "0.3.5",
-  "description": "QuantConnect platform integration with AI assistants for algorithmic trading project management, backtesting, and API access through MCP",
-  "long_description": "An MCP server that provides AI assistants with access to QuantConnect's algorithmic trading platform. Features include project management, file management, backtesting, and authentication tools for quantitative finance.",
+  "version": "1.0.0",
+  "description": "QuantConnect cloud platform tools for AI assistants: projects, backtests, optimizations, live trading, Object Store, and LEAN coding help",
+  "long_description": "An MCP server for QuantConnect's algorithmic trading platform. Write and compile LEAN algorithms, run backtests and parameter optimizations, inspect results, manage live deployments, use the Object Store, and get help from QuantConnect's AI coding tools.",
   "author": {
     "name": "Taylor Wilsdon",
     "email": "taylor@taylorwilsdon.com",
@@ -15,7 +15,7 @@
   "support": "https://github.com/taylorwilsdon/quantconnect-mcp/issues",
   "server": {
     "type": "python",
-    "entry_point": "quantconnect_mcp/__init__.py",
+    "entry_point": "quantconnect_mcp/server.py",
     "mcp_config": {
       "command": "uv",
       "args": [
@@ -33,204 +33,248 @@
   },
   "tools": [
     {
-      "name": "configure_quantconnect_auth",
-      "description": "Configure QuantConnect API authentication credentials"
-    },
-    {
       "name": "validate_quantconnect_auth",
-      "description": "Validate QuantConnect API credentials"
+      "description": "Check that the configured QuantConnect credentials are accepted by the API."
     },
     {
       "name": "get_auth_status",
-      "description": "Check current authentication status"
-    },
-    {
-      "name": "test_quantconnect_api",
-      "description": "Test QuantConnect API connectivity"
-    },
-    {
-      "name": "clear_quantconnect_auth",
-      "description": "Clear stored authentication credentials"
-    },
-    {
-      "name": "get_auth_header",
-      "description": "Get authentication header for API requests"
+      "description": "Show which QuantConnect account the server is configured for, without calling the API."
     },
     {
       "name": "read_account",
-      "description": "Read organization account status and information"
+      "description": "Read the organization account: organization ID, credit balance, and card on file."
+    },
+    {
+      "name": "read_lean_versions",
+      "description": "List the LEAN engine versions available for backtests and live deployments."
     },
     {
       "name": "authorize_connection",
-      "description": "Authorize external connection with live brokerage or data provider"
+      "description": "Start the OAuth flow that links an OAuth-based brokerage to QuantConnect."
     },
     {
       "name": "create_project",
-      "description": "Create new algorithmic trading projects in QuantConnect"
+      "description": "Create a new project."
     },
     {
       "name": "read_project",
-      "description": "Get project details or list all projects"
+      "description": "Read one project, or list every project when no ID is given."
     },
     {
       "name": "update_project",
-      "description": "Update project name and description"
-    },
-    {
-      "name": "compile_project",
-      "description": "Compile a project for backtesting"
-    },
-    {
-      "name": "read_compilation_result",
-      "description": "Read the result of a compilation job"
+      "description": "Rename a project or change its description."
     },
     {
       "name": "delete_project",
-      "description": "Delete a project from QuantConnect"
+      "description": "Permanently delete a project, including its files and backtests."
     },
     {
       "name": "create_project_collaborator",
-      "description": "Add a collaborator to a project"
+      "description": "Add a collaborator to a project."
     },
     {
       "name": "read_project_collaborators",
-      "description": "List all collaborators on a project"
+      "description": "List a project's collaborators and their permissions."
     },
     {
       "name": "update_project_collaborator",
-      "description": "Update collaborator information in a project"
+      "description": "Change a collaborator's permissions."
     },
     {
       "name": "delete_project_collaborator",
-      "description": "Remove a collaborator from a project"
+      "description": "Remove a collaborator from a project."
     },
     {
       "name": "read_project_nodes",
-      "description": "Read available and selected nodes of a project"
+      "description": "List the backtest, research, and live nodes available to a project."
     },
     {
       "name": "update_project_nodes",
-      "description": "Update the active state of project nodes"
+      "description": "Choose which nodes a project may use."
     },
     {
       "name": "create_file",
-      "description": "Create new files in QuantConnect projects"
+      "description": "Add a file to a project."
     },
     {
       "name": "read_file",
-      "description": "Read file content from QuantConnect projects"
+      "description": "Read one file from a project, or every file when no name is given."
     },
     {
       "name": "update_file_content",
-      "description": "Update file content in QuantConnect projects"
+      "description": "Replace the full contents of a project file."
     },
     {
       "name": "update_file_name",
-      "description": "Rename files in QuantConnect projects"
+      "description": "Rename a project file."
     },
     {
       "name": "delete_file",
-      "description": "Delete a file from a QuantConnect project"
+      "description": "Delete a file from a project."
+    },
+    {
+      "name": "compile_project",
+      "description": "Compile a project. A successful compile ID is required to backtest, optimize, or deploy."
+    },
+    {
+      "name": "read_compilation_result",
+      "description": "Read the state and build logs of a compile job."
     },
     {
       "name": "create_backtest",
-      "description": "Create and run backtests for algorithmic trading strategies"
+      "description": "Start a backtest from a successful compile."
     },
     {
       "name": "read_backtest",
-      "description": "Get backtest results and performance metrics"
-    },
-    {
-      "name": "read_backtest_chart",
-      "description": "Get backtest chart data"
-    },
-    {
-      "name": "read_backtest_orders",
-      "description": "Get backtest order history"
-    },
-    {
-      "name": "read_backtest_insights",
-      "description": "Get backtest insights and signals"
-    },
-    {
-      "name": "delete_backtest",
-      "description": "Delete a backtest from a project"
+      "description": "Read a backtest's progress, statistics, and runtime results."
     },
     {
       "name": "list_backtests",
-      "description": "List all backtests for a project"
+      "description": "List a project's backtests."
+    },
+    {
+      "name": "read_backtest_chart",
+      "description": "Read one chart from a backtest, sampled to a number of points."
+    },
+    {
+      "name": "read_backtest_orders",
+      "description": "Read a page of a backtest's orders, at most 100 per call."
+    },
+    {
+      "name": "read_backtest_insights",
+      "description": "Read a page of the alpha insights a backtest emitted, at most 100 per call."
+    },
+    {
+      "name": "read_backtest_report",
+      "description": "Read the full HTML performance report for a completed backtest."
     },
     {
       "name": "update_backtest",
-      "description": "Update a backtest's name or note"
+      "description": "Rename a backtest or attach a note to it."
     },
     {
-      "name": "create_live_algorithm",
-      "description": "Create a live algorithm deployment"
-    },
-    {
-      "name": "read_live_algorithm",
-      "description": "Read comprehensive live algorithm statistics and data"
-    },
-    {
-      "name": "liquidate_live_algorithm",
-      "description": "Liquidate all positions in a live algorithm"
-    },
-    {
-      "name": "stop_live_algorithm",
-      "description": "Stop a live algorithm"
-    },
-    {
-      "name": "list_live_algorithms",
-      "description": "List live algorithms with optional filters"
-    },
-    {
-      "name": "read_live_logs",
-      "description": "Read logs from a live algorithm"
-    },
-    {
-      "name": "read_live_chart",
-      "description": "Read chart data from a live algorithm"
-    },
-    {
-      "name": "read_live_portfolio",
-      "description": "Read portfolio state from a live algorithm"
-    },
-    {
-      "name": "read_live_orders",
-      "description": "Read orders from a live algorithm"
-    },
-    {
-      "name": "read_live_insights",
-      "description": "Read insights from a live algorithm"
+      "name": "delete_backtest",
+      "description": "Permanently delete a backtest."
     },
     {
       "name": "estimate_optimization_time",
-      "description": "Estimate execution time of optimization with specified parameters"
+      "description": "Estimate how long a grid-search optimization would run, and show the QCC balance."
     },
     {
       "name": "create_optimization",
-      "description": "Create an optimization with specified parameters"
+      "description": "Launch a grid-search optimization. This spends QuantConnect Credit (QCC)."
     },
     {
       "name": "read_optimization",
-      "description": "Read an optimization by its ID"
+      "description": "Read an optimization's status, settings, and backtest results."
     },
     {
       "name": "list_optimizations",
-      "description": "List all optimizations for a project"
+      "description": "List a project's optimizations."
     },
     {
       "name": "update_optimization",
-      "description": "Update the name of an optimization"
+      "description": "Rename an optimization."
     },
     {
       "name": "abort_optimization",
-      "description": "Abort an optimization that is currently running"
+      "description": "Abort a running optimization. Completed backtests are kept."
     },
     {
       "name": "delete_optimization",
-      "description": "Delete an optimization"
+      "description": "Permanently delete an optimization and its results."
+    },
+    {
+      "name": "create_live_algorithm",
+      "description": "Deploy a compiled project to live trading. This can place real orders."
+    },
+    {
+      "name": "read_live_algorithm",
+      "description": "Read the status, runtime statistics, and charts of a project's live algorithm."
+    },
+    {
+      "name": "list_live_algorithms",
+      "description": "List live algorithms, optionally filtered."
+    },
+    {
+      "name": "read_live_logs",
+      "description": "Read a page of a live algorithm's logs, at most 250 lines per call."
+    },
+    {
+      "name": "read_live_chart",
+      "description": "Read one chart from a live algorithm, sampled to a number of points."
+    },
+    {
+      "name": "read_live_portfolio",
+      "description": "Read the current holdings and cash of a live algorithm."
+    },
+    {
+      "name": "read_live_orders",
+      "description": "Read a page of a live algorithm's orders, at most 100 per call."
+    },
+    {
+      "name": "read_live_insights",
+      "description": "Read a page of the alpha insights a live algorithm emitted, at most 100 per call."
+    },
+    {
+      "name": "liquidate_live_algorithm",
+      "description": "Close every position of a live algorithm at market and stop it."
+    },
+    {
+      "name": "stop_live_algorithm",
+      "description": "Stop a live algorithm, leaving its positions open."
+    },
+    {
+      "name": "create_live_command",
+      "description": "Send a command to a running live algorithm."
+    },
+    {
+      "name": "broadcast_live_command",
+      "description": "Send a command to every live algorithm in the organization."
+    },
+    {
+      "name": "list_object_store",
+      "description": "List Object Store keys, optionally under a path."
+    },
+    {
+      "name": "read_object_store_properties",
+      "description": "Read an Object Store entry's metadata: size, modified time, and a content preview."
+    },
+    {
+      "name": "get_object_store_download",
+      "description": "Prepare a download of Object Store entries, in two steps."
+    },
+    {
+      "name": "upload_object_store_object",
+      "description": "Write a text value to the Object Store, replacing any existing value at the key."
+    },
+    {
+      "name": "delete_object_store_object",
+      "description": "Delete an Object Store entry."
+    },
+    {
+      "name": "check_syntax",
+      "description": "Check algorithm code for syntax and API errors without compiling a project."
+    },
+    {
+      "name": "initialize_backtest",
+      "description": "Run an algorithm for a few seconds to surface initialization errors."
+    },
+    {
+      "name": "enhance_error",
+      "description": "Explain a LEAN compile or runtime error and suggest fixes."
+    },
+    {
+      "name": "search_quantconnect",
+      "description": "Search QuantConnect documentation, examples, API stubs, and forum posts."
+    },
+    {
+      "name": "complete_code",
+      "description": "Suggest LEAN API completions for a partial expression, for example \"self.add_eq\"."
+    },
+    {
+      "name": "convert_to_pep8",
+      "description": "Rewrite Python algorithm code from the legacy PascalCase API to PEP 8 snake_case."
     }
   ],
   "user_config": {
@@ -251,7 +295,7 @@
     "QUANTCONNECT_ORGANIZATION_ID": {
       "type": "string",
       "title": "QuantConnect Organization ID",
-      "description": "Organization ID for team accounts (optional for individual accounts)",
+      "description": "Organization for new projects and the Object Store. Leave blank to use your preferred organization.",
       "required": false,
       "sensitive": false
     }
