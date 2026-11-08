@@ -14,7 +14,9 @@ from quantconnect_mcp.tools._shared import (
     check_range,
 )
 
-PAGE_LIMIT = 100
+# Spec bounds on end - start: < 100 for insights, <= 1,000 for orders, <= 250 for logs.
+PAGE_LIMIT = 99
+ORDERS_PAGE_LIMIT = 1000
 LOG_PAGE_LIMIT = 250
 
 LiveStatus = Literal["Running", "Stopped", "RuntimeError", "Liquidated"]
@@ -145,8 +147,7 @@ async def read_live_chart(
         end: End of the window, as a Unix timestamp in seconds.
         count: Number of data points to return.
     """
-    if end <= start:
-        raise ToolError("end must be later than start")
+    check_range(start, end)
     return await qc.post(
         "live/chart/read", projectId=project_id, name=name, start=start, end=end, count=count
     )
@@ -166,11 +167,11 @@ async def read_live_portfolio(project_id: int, qc: QuantConnectClient = CLIENT) 
 async def read_live_orders(
     project_id: int,
     start: Index = 0,
-    end: Index = PAGE_LIMIT,
+    end: Index = 100,
     deploy_id: str | None = None,
     qc: QuantConnectClient = CLIENT,
 ) -> dict[str, Any]:
-    """Read a page of a live algorithm's orders, at most 100 per call.
+    """Read a page of a live algorithm's orders, at most 1000 per call (default 100).
 
     Args:
         project_id: The live project.
@@ -178,7 +179,7 @@ async def read_live_orders(
         end: Index after the last order (exclusive).
         deploy_id: Read a specific deployment. Defaults to the latest.
     """
-    check_range(start, end, PAGE_LIMIT)
+    check_range(start, end, ORDERS_PAGE_LIMIT)
     return await qc.post(
         "live/orders/read", projectId=project_id, start=start, end=end, deployId=deploy_id
     )
@@ -192,7 +193,7 @@ async def read_live_insights(
     algorithm_id: str | None = None,
     qc: QuantConnectClient = CLIENT,
 ) -> dict[str, Any]:
-    """Read a page of the alpha insights a live algorithm emitted, at most 100 per call.
+    """Read a page of the alpha insights a live algorithm emitted, at most 99 per call.
 
     Args:
         project_id: The live project.

@@ -20,13 +20,13 @@ Index = Annotated[int, Field(ge=0)]
 
 
 class ApiModel(BaseModel):
-    """A nested request object, serialized with QuantConnect's camelCase field names."""
+    """A nested request object: snake_case for tool callers, camelCase on the wire."""
 
-    model_config = ConfigDict(alias_generator=to_camel, validate_by_name=True)
+    model_config = ConfigDict(extra="forbid")
 
     def to_api(self) -> dict[str, Any]:
-        """Serialize for a request body, leaving out unset optional fields."""
-        return self.model_dump(by_alias=True, exclude_none=True)
+        """Serialize for a request body with camelCase keys, leaving out unset optional fields."""
+        return {to_camel(key): value for key, value in self.model_dump(exclude_none=True).items()}
 
 
 class CodeFile(ApiModel):
@@ -45,9 +45,9 @@ def get_client() -> QuantConnectClient:
 CLIENT = Depends(get_client)
 
 
-def check_range(start: int, end: int, limit: int) -> None:
-    """Validate a ``[start, end)`` window against an API page-size limit."""
+def check_range(start: int, end: int, limit: int | None = None) -> None:
+    """Validate a ``[start, end)`` window, optionally capped at ``limit`` items (inclusive)."""
     if end <= start:
         raise ToolError(f"end ({end}) must be greater than start ({start})")
-    if end - start > limit:
+    if limit is not None and end - start > limit:
         raise ToolError(f"end - start must be at most {limit}, got {end - start}")

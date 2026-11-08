@@ -1,9 +1,9 @@
-"""Runtime configuration, read from environment variables or a ``.env`` file."""
+"""Runtime configuration, read from environment variables."""
 
 from ipaddress import ip_address
 from typing import Literal
 
-from pydantic import AliasChoices, Field, SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LOOPBACK_HOSTNAMES = frozenset({"localhost"})
@@ -12,13 +12,9 @@ LOOPBACK_HOSTNAMES = frozenset({"localhost"})
 class Settings(BaseSettings):
     """Server settings. Field names map to upper-case environment variables."""
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_ignore_empty=True,
-        extra="ignore",
-        validate_by_alias=True,
-        validate_by_name=True,
-    )
+    # No env_file: MCP clients launch the server from the user's own project, so a
+    # .env there belongs to that project. Use `uv run --env-file` to load one.
+    model_config = SettingsConfigDict(env_ignore_empty=True)
 
     quantconnect_user_id: str
     quantconnect_api_token: SecretStr
@@ -28,7 +24,7 @@ class Settings(BaseSettings):
 
     mcp_transport: Literal["stdio", "streamable-http"] = "stdio"
     mcp_host: str = "127.0.0.1"
-    mcp_port: int = Field(8000, validation_alias=AliasChoices("MCP_PORT", "PORT"))
+    mcp_port: int = 8000
     mcp_path: str = "/mcp"
     mcp_auth_token: SecretStr | None = None
 

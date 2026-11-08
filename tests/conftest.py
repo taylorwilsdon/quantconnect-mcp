@@ -63,7 +63,6 @@ def body_of(request: httpx2.Request) -> dict[str, Any]:
 @pytest.fixture
 def settings() -> Settings:
     return Settings(
-        _env_file=None,
         quantconnect_user_id="123456",
         quantconnect_api_token="secret-token",
         quantconnect_organization_id=ORGANIZATION_ID,

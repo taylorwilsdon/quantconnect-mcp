@@ -62,7 +62,9 @@ Download `quantconnect-mcp.dxt` from the [Releases](https://github.com/taylorwil
 
 ## ◈ Configuration
 
-All settings come from environment variables or a `.env` file in the working directory (see [`.env.example`](.env.example)). Credentials are never accepted through tool calls, so they stay out of model transcripts.
+All settings come from environment variables. Credentials are never accepted through tool calls, so they stay out of model transcripts.
+
+The server does not read a `.env` file on its own, because MCP clients start it from inside your project and that project's `.env` is not meant for it. To keep settings in a file, copy [`.env.example`](.env.example) and pass it explicitly, for example `uv run --env-file .env quantconnect-mcp`.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
@@ -72,7 +74,7 @@ All settings come from environment variables or a `.env` file in the working dir
 | `REQUEST_TIMEOUT` | `60` | Seconds to wait for a QuantConnect response |
 | `MCP_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
 | `MCP_HOST` | `127.0.0.1` | HTTP bind address |
-| `MCP_PORT` (or `PORT`) | `8000` | HTTP port |
+| `MCP_PORT` | `8000` | HTTP port |
 | `MCP_PATH` | `/mcp` | HTTP endpoint path |
 | `MCP_AUTH_TOKEN` | unset | Bearer token that HTTP clients must send |
 | `LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, or `ERROR` (logs go to stderr) |

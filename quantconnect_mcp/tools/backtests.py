@@ -15,7 +15,8 @@ from quantconnect_mcp.tools._shared import (
     check_range,
 )
 
-PAGE_LIMIT = 100
+# The spec requires end - start < 100 for orders and insights.
+PAGE_LIMIT = 99
 
 
 @tool(annotations=MUTATING)
@@ -93,8 +94,7 @@ async def read_backtest_chart(
         end: End of the window, as a Unix timestamp in seconds.
         count: Number of data points to return.
     """
-    if end <= start:
-        raise ToolError("end must be later than start")
+    check_range(start, end)
     return await qc.post(
         "backtests/chart/read",
         projectId=project_id,
@@ -114,7 +114,7 @@ async def read_backtest_orders(
     end: Index = PAGE_LIMIT,
     qc: QuantConnectClient = CLIENT,
 ) -> dict[str, Any]:
-    """Read a page of a backtest's orders, at most 100 per call.
+    """Read a page of a backtest's orders, at most 99 per call.
 
     If the response has status "loading", the orders are still being generated: call again.
 
@@ -142,7 +142,7 @@ async def read_backtest_insights(
     end: Index = PAGE_LIMIT,
     qc: QuantConnectClient = CLIENT,
 ) -> dict[str, Any]:
-    """Read a page of the alpha insights a backtest emitted, at most 100 per call.
+    """Read a page of the alpha insights a backtest emitted, at most 99 per call.
 
     Args:
         project_id: The project that owns the backtest.

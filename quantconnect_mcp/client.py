@@ -42,8 +42,9 @@ class QuantConnectAuth(httpx2.Auth):
 class QuantConnectClient:
     """A pooled, authenticated connection to the QuantConnect API.
 
-    Every call returns the decoded JSON payload with the ``success`` and ``errors``
-    envelope removed, or raises :class:`QuantConnectError`.
+    Every call returns the decoded JSON payload with the ``success`` flag removed, or
+    raises :class:`QuantConnectError`. ``errors`` is kept only when a successful response
+    carries warnings.
 
     Deliberately not an async context manager: FastMCP's ``Depends`` would enter and
     exit it around every tool call, closing the shared pool. Use ``aclosing`` instead.
@@ -93,7 +94,13 @@ class QuantConnectClient:
             return explicit
         if self._default_organization_id is None:
             account = await self.post("account/read")
-            self._default_organization_id = str(account["organizationId"])
+            organization_id = account.get("organizationId")
+            if not organization_id:
+                raise QuantConnectError(
+                    "The QuantConnect account has no default organization. Set "
+                    "QUANTCONNECT_ORGANIZATION_ID or pass an organization ID explicitly."
+                )
+            self._default_organization_id = str(organization_id)
         return self._default_organization_id
 
     async def _send(self, endpoint: str, **request: Any) -> dict[str, Any]:
@@ -134,8 +141,10 @@ def _parse(endpoint: str, response: httpx2.Response) -> dict[str, Any]:
         data: dict[str, Any] = response.json()
     except ValueError as exc:
         raise QuantConnectError(f"{endpoint} returned a response that is not JSON") from exc
-    errors = data.pop("errors", None) or []
+    errors = data.get("errors") or []
     if data.pop("success", None) is False:
         detail = "; ".join(map(str, errors)) or "no error details were returned"
         raise QuantConnectError(f"{endpoint} failed: {detail}")
+    if not errors:
+        data.pop("errors", None)
     return data

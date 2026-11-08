@@ -84,7 +84,7 @@ def load_settings() -> Settings:
         names = sorted({str(error["loc"][0]).upper() for error in exc.errors()})
         sys.exit(
             f"quantconnect-mcp: missing or invalid settings: {', '.join(names)}. "
-            "Set them as environment variables or in a .env file."
+            "Set them as environment variables."
         )
 
 

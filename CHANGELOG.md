@@ -32,7 +32,7 @@ A ground-up rewrite on FastMCP 4, validated against QuantConnect's current OpenA
 - Tools return QuantConnect's response payload directly.
 - Signature changes: `update_file_name(project_id, name, new_name)`; `create_project_collaborator(..., write, live_control)`; `update_project_collaborator(..., write, live_control)` both required; `create_live_algorithm(..., brokerage, version_id: int)` replaces `brokerage_id`/`brokerage_config`; `read_live_algorithm` no longer takes `deploy_id`; `list_live_algorithms` no longer takes `start`/`end`; `read_live_logs` no longer takes `format`; `read_backtest_chart` and `read_live_chart` require `start` and `end`; `authorize_connection(brokerage)` takes one of `alpaca`, `tradestation`, `charlesschwab`, `tastytrade`.
 - One pooled HTTP connection with timeouts, connection retries, and a single `Retry-After` retry on HTTP 429.
-- Configuration is centralized in `Settings`; blank optional variables are treated as unset; `PORT` is accepted as an alias for `MCP_PORT`.
+- Configuration is centralized in `Settings`; blank optional variables are treated as unset. The generic `PORT` variable is no longer read; set `MCP_PORT`.
 
 ### Removed
 - Unused runtime dependencies: arch, matplotlib, numpy, pandas, psutil, scikit-learn, scipy, seaborn, statsmodels, quantconnect, quantconnect-lean, and pytest-asyncio. Runtime dependencies are now fastmcp, httpx2, pydantic, and pydantic-settings.

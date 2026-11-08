@@ -67,14 +67,17 @@ async def test_unexpected_failure_is_masked(mcp: Client[Any], api: FakeQuantConn
 @pytest.mark.parametrize(
     ("tool", "args"),
     [
-        ("read_backtest_orders", {"project_id": 1, "backtest_id": "b", "start": 0, "end": 101}),
+        ("read_backtest_orders", {"project_id": 1, "backtest_id": "b", "start": 0, "end": 100}),
         ("read_backtest_insights", {"project_id": 1, "backtest_id": "b", "start": 5, "end": 5}),
+        ("read_live_insights", {"project_id": 1, "start": 10, "end": 110}),
         ("read_live_logs", {"project_id": 1, "algorithm_id": "L", "end_line": 251}),
         ("read_live_orders", {"project_id": 1, "start": -1, "end": 10}),
+        ("read_live_orders", {"project_id": 1, "start": 0, "end": 1001}),
         (
             "read_backtest_chart",
             {"project_id": 1, "backtest_id": "b", "name": "c", "start": 9, "end": 1},
         ),
+        ("read_live_chart", {"project_id": 1, "name": "c", "start": 5, "end": 5}),
         ("update_project", {"project_id": 1}),
         ("update_backtest", {"project_id": 1, "backtest_id": "b"}),
         (
@@ -114,6 +117,35 @@ async def test_compile_project_waits_for_the_build(
         "compile/read",
         "compile/read",
     ]
+
+
+async def test_compile_project_fails_when_the_build_outlasts_the_wait(
+    mcp: Client[Any], api: FakeQuantConnect, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(compile_tools, "POLL_INTERVAL_SECONDS", 0)
+    monkeypatch.setattr(compile_tools, "MAX_POLLS", 2)
+    api.reply("compile/create", {"success": True, "compileId": "c-1", "state": "InQueue"})
+    api.reply("compile/read", {"success": True, "compileId": "c-1", "state": "InQueue"})
+
+    result = await mcp.call_tool("compile_project", {"project_id": 1}, raise_on_error=False)
+
+    assert result.is_error
+    message = result.content[0].text  # type: ignore[union-attr]
+    assert "c-1" in message
+    assert "read_compilation_result" in message
+    assert len(api.requests) == 3
+
+
+async def test_compile_project_requires_a_compile_id_to_wait(
+    mcp: Client[Any], api: FakeQuantConnect
+) -> None:
+    api.reply("compile/create", {"success": True, "state": "InQueue"})
+
+    result = await mcp.call_tool("compile_project", {"project_id": 1}, raise_on_error=False)
+
+    assert result.is_error
+    assert "compileId" in result.content[0].text  # type: ignore[union-attr]
+    assert len(api.requests) == 1
 
 
 async def test_get_auth_status_makes_no_request(mcp: Client[Any], api: FakeQuantConnect) -> None:
@@ -159,3 +191,12 @@ async def test_destructive_tools_are_annotated(mcp: Client[Any]) -> None:
     for name in ("liquidate_live_algorithm", "stop_live_algorithm", "delete_project"):
         assert tools[name].annotations.destructive_hint  # type: ignore[union-attr]
     assert tools["read_backtest"].annotations.read_only_hint  # type: ignore[union-attr]
+
+
+async def test_nested_arguments_are_snake_case(mcp: Client[Any]) -> None:
+    tools = {tool.name: tool for tool in await mcp.list_tools()}
+
+    properties = tools["create_optimization"].input_schema["properties"]
+
+    assert "min_step" in properties["parameters"]["items"]["properties"]
+    assert "target_value" in properties["constraints"]["anyOf"][0]["items"]["properties"]

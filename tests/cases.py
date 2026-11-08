@@ -28,7 +28,7 @@ OPTIMIZATION_ARGS = {
     "name": "sweep",
     "target": "SharpeRatio",
     "target_to": "max",
-    "parameters": [{"name": "fast", "min": 5, "max": 20, "step": 5, "minStep": 1}],
+    "parameters": [{"name": "fast", "min": 5, "max": 20, "step": 5, "min_step": 1}],
     "constraints": [{"target": "Drawdown", "operator": "LessOrEqual", "target_value": 0.2}],
 }
 OPTIMIZATION_BODY = {
@@ -178,13 +178,13 @@ CASES = (
         "read_backtest_orders",
         {"project_id": 1, "backtest_id": "b-1"},
         "backtests/orders/read",
-        {"projectId": 1, "backtestId": "b-1", "start": 0, "end": 100},
+        {"projectId": 1, "backtestId": "b-1", "start": 0, "end": 99},
     ),
     Case(
         "read_backtest_insights",
-        {"project_id": 1, "backtest_id": "b-1", "start": 100, "end": 200},
+        {"project_id": 1, "backtest_id": "b-1", "start": 99, "end": 198},
         "backtests/read/insights",
-        {"projectId": 1, "backtestId": "b-1", "start": 100, "end": 200},
+        {"projectId": 1, "backtestId": "b-1", "start": 99, "end": 198},
     ),
     Case(
         "read_backtest_report",
@@ -291,7 +291,7 @@ CASES = (
         "read_live_insights",
         {"project_id": 1, "algorithm_id": "L-1"},
         "live/insights/read",
-        {"projectId": 1, "start": 0, "end": 100, "algorithmId": "L-1"},
+        {"projectId": 1, "start": 0, "end": 99, "algorithmId": "L-1"},
     ),
     Case(
         "liquidate_live_algorithm",

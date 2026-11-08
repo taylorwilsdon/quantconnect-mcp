@@ -1,5 +1,7 @@
 """Settings loading, startup guards, and HTTP bearer authentication."""
 
+from pathlib import Path
+
 import httpx2
 import pytest
 from pydantic import SecretStr
@@ -13,7 +15,7 @@ from quantconnect_mcp.settings import Settings
 def clean_environment(
     monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory
 ) -> None:
-    """Isolate tests from the developer's shell and any .env file in the repo."""
+    """Isolate tests from the developer's shell and the repo's working directory."""
     monkeypatch.chdir(tmp_path_factory.mktemp("cwd"))
     for name in (
         "QUANTCONNECT_USER_ID",
@@ -35,7 +37,7 @@ def set_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_settings_read_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     set_credentials(monkeypatch)
-    monkeypatch.setenv("PORT", "9000")
+    monkeypatch.setenv("MCP_PORT", "9000")
 
     settings = Settings()
 
@@ -43,6 +45,18 @@ def test_settings_read_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.quantconnect_api_token.get_secret_value() == "hunter2"
     assert "hunter2" not in repr(settings)
     assert settings.mcp_port == 9000
+
+
+def test_host_project_port_and_dotenv_are_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A client may launch the server inside another project with its own PORT and .env."""
+    set_credentials(monkeypatch)
+    monkeypatch.setenv("PORT", "$APP_PORT")
+    Path(".env").write_text("MCP_PORT=$APP_PORT\nLOG_LEVEL=verbose\n")
+
+    settings = Settings()
+
+    assert settings.mcp_transport == "stdio"
+    assert settings.mcp_port == 8000
 
 
 def test_blank_optional_settings_are_unset(monkeypatch: pytest.MonkeyPatch) -> None:

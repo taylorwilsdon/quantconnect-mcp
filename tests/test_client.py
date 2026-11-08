@@ -44,6 +44,14 @@ async def test_payload_is_returned_without_envelope(
     assert await client.post("projects/read") == {"projects": []}
 
 
+async def test_warnings_on_success_are_kept(
+    client: QuantConnectClient, api: FakeQuantConnect
+) -> None:
+    api.reply("projects/read", {"success": True, "errors": ["careful"], "projects": []})
+
+    assert await client.post("projects/read") == {"errors": ["careful"], "projects": []}
+
+
 async def test_responses_without_success_flag_are_accepted(
     client: QuantConnectClient, api: FakeQuantConnect
 ) -> None:
@@ -125,3 +133,14 @@ async def test_organization_id_falls_back_to_account(
     assert await client.organization_id() == "from-account"
     assert await client.organization_id() == "from-account"
     assert [endpoint_of(request) for request in api.requests] == ["account/read"]
+
+
+async def test_organization_id_requires_account_default(
+    settings: Settings, api: FakeQuantConnect
+) -> None:
+    settings = settings.model_copy(update={"quantconnect_organization_id": None})
+    client = QuantConnectClient(settings, api.transport)
+    api.reply("account/read", {"success": True})
+
+    with pytest.raises(QuantConnectError, match="QUANTCONNECT_ORGANIZATION_ID"):
+        await client.organization_id()
