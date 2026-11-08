@@ -1,51 +1,74 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.13.7,<0.14"]
+build-backend = "uv_build"
 
 [project]
 name = "quantconnect-mcp"
-version = "0.3.5"
-description = "QuantConnect platform integration with AI assistants for algorithmic trading project management, backtesting, and API access through MCP"
+version = "1.0.0"
+description = "MCP server for the QuantConnect cloud platform: projects, files, compilation, backtests, optimizations, live trading, and the Object Store"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Taylor Wilsdon", email = "taylor@taylorwilsdon.com" }]
 requires-python = ">=3.12"
+keywords = ["mcp", "quantconnect", "lean", "algorithmic-trading", "backtesting", "fastmcp"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Typing :: Typed",
+]
 dependencies = [
-    "arch>=7.2.0",
-    "fastmcp==2.11.2",
-    "httpx>=0.28.1",
-    "matplotlib>=3.10.3",
-    "numpy>=1.24.0,<2.0.0",
-    "pandas>=2.3.0",
-    "psutil>=7.0.0",
-    "pytest-asyncio>=1.0.0",
-    "scikit-learn>=1.7.0",
-    "scipy>=1.15.3",
-    "seaborn>=0.13.2",
-    "statsmodels>=0.14.4",
-    "quantconnect-lean",
-    "quantconnect>=0.1.0",
+    "fastmcp>=4.1.6,<5",
+    "httpx2>=2.16",
+    "pydantic>=2.14",
+    "pydantic-settings>=2.16",
 ]
 
+[project.urls]
+Homepage = "https://github.com/taylorwilsdon/quantconnect-mcp"
+Issues = "https://github.com/taylorwilsdon/quantconnect-mcp/issues"
+Changelog = "https://github.com/taylorwilsdon/quantconnect-mcp/blob/main/CHANGELOG.md"
+
 [project.scripts]
-quantconnect-mcp = "quantconnect_mcp.main:main"
+quantconnect-mcp = "quantconnect_mcp.server:main"
 
 [dependency-groups]
 dev = [
-    "black>=25.1.0",
-    "mypy>=1.16.0",
-    "pre-commit>=4.2.0",
-    "pytest>=8.4.0",
-    "pytest-asyncio>=1.0.0",
-    "ruff>=0.11.13",
-    "tomlkit>=0.13.3",
+    "mypy>=2.4",
+    "pre-commit>=4.7",
+    "pytest>=9.2",
+    "pytest-asyncio>=1.4",
+    "pyyaml>=6.0.3",
+    "ruff>=0.17",
+    "types-pyyaml>=6.0",
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["quantconnect_mcp*"]
+[tool.uv.build-backend]
+module-root = ""
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ASYNC"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+files = ["quantconnect_mcp", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_decorators = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-filterwarnings = [
-    "ignore:.*coroutine.*AsyncMockMixin.*never awaited:RuntimeWarning"
-]
+testpaths = ["tests"]

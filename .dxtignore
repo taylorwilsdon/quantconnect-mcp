@@ -64,3 +64,5 @@ refac_add.md
 uv.lock
 
 
+.github/
+.pre-commit-config.yaml

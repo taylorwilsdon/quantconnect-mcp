@@ -1,16 +1,28 @@
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-.Python
+
+# Environments and secrets
 .env
-.venv
-env/
+.venv/
 venv/
-ENV/
+
+# Tooling caches
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
-*.log
-.DS_Store
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.dxt
+*.mcpb
+
+# Editors and OS
 .idea/
 .vscode/
+.DS_Store
+*.log
