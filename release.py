@@ -14,7 +14,6 @@ PYPROJECT_PATH = ROOT / "pyproject.toml"
 MANIFEST_PATH = ROOT / "manifest.json"
 LOCK_PATH = ROOT / "uv.lock"
 DIST_DIR = ROOT / "dist"
-PYPI_SIMPLE_URL = "https://pypi.org/simple/"
 PROJECT_VERSION_RE = re.compile(r'^(\[project\]$.*?^version = ")[^"]+', re.MULTILINE | re.DOTALL)
 
 # --- Helper Functions ---
@@ -213,16 +212,8 @@ def main():
         run_command(["git", "push", "origin", f"refs/tags/{tag_name}"])
         print(f"✅ Pushed tag {tag_name} to origin.")
 
-    # 7. Upload to PyPI
-    print("\n--- 7. Uploading to PyPI ---")
-    print("🔑 You may be prompted for PyPI credentials (or set UV_PUBLISH_TOKEN).")
-    run_command(
-        ["uv", "publish", "--check-url", PYPI_SIMPLE_URL, str(DIST_DIR / "*")], interactive=True
-    )
-    print("✅ Successfully uploaded to PyPI (or skipped if already present).")
-
-    # 8. Create GitHub Release
-    print("\n--- 8. Creating GitHub Release ---")
+    # 7. Create GitHub Release
+    print("\n--- 7. Creating GitHub Release ---")
     print("📝 Creating a draft release on GitHub...")
     run_command(
         ["gh", "release", "create", tag_name, "--draft", "--title", tag_name], interactive=True
@@ -240,6 +231,7 @@ def main():
         print("⚠️ Could not determine repository URL to open browser.")
 
     print(f"✅ GitHub draft release for {tag_name} created.")
+    print("📦 Publishing the draft triggers the Publish workflow, which uploads to PyPI.")
     print(
         "\n🎉 Re-release process complete! 🎉" if args.re_release else "\n🎉 Release complete! 🎉"
     )
