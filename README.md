@@ -34,6 +34,8 @@ Every request is validated in CI against QuantConnect's published OpenAPI spec.
 
 ## ◈ Quick start
 
+You need [uv](https://docs.astral.sh/uv/) (it fetches Python 3.12+ and the server for you) and a QuantConnect account.
+
 1. Get your **User ID** and **API token** from [quantconnect.com/settings](https://www.quantconnect.com/settings/).
 2. Add the server to your MCP client. For Claude Desktop, Claude Code, Cursor, and most clients:
 
@@ -58,7 +60,14 @@ With Claude Code you can run `claude mcp add quantconnect -e QUANTCONNECT_USER_I
 
 ### Claude Desktop extension
 
-Download `quantconnect-mcp.dxt` from the [Releases](https://github.com/taylorwilsdon/quantconnect-mcp/releases) page, double-click it, and enter your credentials under **Settings > Extensions > QuantConnect MCP**.
+The 1.0 release does not ship a prebuilt `.dxt`, and the bundles attached to 0.x releases contain the old server, so build it from a checkout:
+
+```bash
+git clone https://github.com/taylorwilsdon/quantconnect-mcp && cd quantconnect-mcp
+npx @anthropic-ai/dxt pack . quantconnect-mcp.dxt
+```
+
+Double-click the file and enter your credentials under **Settings > Extensions > QuantConnect MCP**. The extension starts the server with `uv run`, so uv must be installed.
 
 ## ◈ Configuration
 
@@ -71,6 +80,7 @@ The server does not read a `.env` file on its own, because MCP clients start it 
 | `QUANTCONNECT_USER_ID` | required | Your QuantConnect user ID |
 | `QUANTCONNECT_API_TOKEN` | required | Your QuantConnect API token |
 | `QUANTCONNECT_ORGANIZATION_ID` | your preferred org | Organization for new projects, the Object Store, and broadcasts |
+| `QUANTCONNECT_API_URL` | `https://www.quantconnect.com/api/v2/` | API base URL; change it only to point at a proxy or mock |
 | `REQUEST_TIMEOUT` | `60` | Seconds to wait for a QuantConnect response |
 | `MCP_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
 | `MCP_HOST` | `127.0.0.1` | HTTP bind address |
@@ -78,6 +88,10 @@ The server does not read a `.env` file on its own, because MCP clients start it 
 | `MCP_PATH` | `/mcp` | HTTP endpoint path |
 | `MCP_AUTH_TOKEN` | unset | Bearer token that HTTP clients must send |
 | `LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, or `ERROR` (logs go to stderr) |
+
+Blank optional variables count as unset. If a required variable is missing or a value is invalid, the server exits at startup and names the offending variables.
+
+The API client keeps one pooled connection, retries failed connections, and retries once on HTTP 429 after waiting for `Retry-After` (capped at 30 seconds).
 
 ## ◈ Security model
 
@@ -91,7 +105,22 @@ These tools can deploy algorithms and liquidate positions on real brokerage acco
 ### Running over HTTP
 
 ```bash
-MCP_TRANSPORT=streamable-http MCP_AUTH_TOKEN=$(openssl rand -hex 32) uvx quantconnect-mcp
+export MCP_AUTH_TOKEN=$(openssl rand -hex 32)
+MCP_TRANSPORT=streamable-http uvx quantconnect-mcp
+```
+
+The endpoint is `http://127.0.0.1:8000/mcp`. Point a client at it with the token:
+
+```json
+{
+  "mcpServers": {
+    "quantconnect": {
+      "type": "http",
+      "url": "http://127.0.0.1:8000/mcp",
+      "headers": { "Authorization": "Bearer your-mcp-auth-token" }
+    }
+  }
+}
 ```
 
 ### Docker
@@ -102,6 +131,8 @@ docker run -p 8000:8000 \
   -e QUANTCONNECT_USER_ID -e QUANTCONNECT_API_TOKEN -e MCP_AUTH_TOKEN \
   quantconnect-mcp
 ```
+
+The image serves HTTP on `0.0.0.0:8000` as a non-root user, so it will not start without `MCP_AUTH_TOKEN`.
 
 ## ◈ Tools
 
@@ -117,15 +148,28 @@ docker run -p 8000:8000 \
 | Object Store | `list_object_store`, `read_object_store_properties`, `get_object_store_download`, `upload_object_store_object`, `delete_object_store_object` |
 | LEAN coding help | `check_syntax`, `initialize_backtest`, `enhance_error`, `search_quantconnect`, `complete_code`, `convert_to_pep8` |
 
-Each tool returns QuantConnect's response payload. Paged reads (orders, insights, logs) enforce the API's page limits up front.
+Each tool returns QuantConnect's response payload. A few behaviors are worth knowing:
+
+- **Compiling**: `compile_project` polls until the build reaches `BuildSuccess` or `BuildError` and reports progress. After about two minutes it fails with the compile ID so you can check later with `read_compilation_result`. Pass `wait=false` to return immediately.
+- **Paging**: page limits are enforced before the request is sent. Backtest orders and all insights allow 99 items per call, live orders 1,000, and live logs 250 lines. `end` is exclusive.
+- **Charts**: `read_backtest_chart` and `read_live_chart` need `start` and `end` as Unix timestamps. Charts, orders, and reports can answer with a loading status while QuantConnect generates them; call again.
+- **Optimizations**: grid search only. `target` and constraints use `SharpeRatio`, `CompoundingAnnualReturn`, `ProbabilisticSharpeRatio`, or `Drawdown`. `create_optimization` spends QuantConnect Credit and needs the `estimated_cost` from `estimate_optimization_time`.
+- **Live deployment**: `create_live_algorithm` takes a `brokerage` object with an `id`, for example `{"id": "QuantConnectBrokerage"}` for paper trading. `authorize_connection` returns an OAuth URL for Alpaca, TradeStation, Charles Schwab, or tastytrade that a person must open in a browser.
+- **Object Store**: uploads store text. Downloads take two steps: call `get_object_store_download` with `keys` to start a job, then with the returned `job_id` until the response has a URL.
 
 ## ◈ Upgrading from 0.x
 
 1.0 is a rewrite on FastMCP 4. Tool names are unchanged except as noted below; see [CHANGELOG.md](CHANGELOG.md) for every signature change.
 
-- Removed `configure_quantconnect_auth`, `clear_quantconnect_auth`, `test_quantconnect_api`, and `get_auth_headers_info`. Set credentials through the environment.
+- Removed `configure_quantconnect_auth`, `clear_quantconnect_auth`, `test_quantconnect_api`, and `get_auth_headers_info`. Set credentials through the environment; the server no longer starts without them.
+- HTTP now binds to `127.0.0.1` instead of `0.0.0.0`, and any other bind address requires `MCP_AUTH_TOKEN`. Existing Docker and remote deployments must set a token and send it as a bearer header.
+- `MCP_TRANSPORT` accepts only `stdio` and `streamable-http`. The generic `PORT` variable is no longer read; set `MCP_PORT`.
+- The entry point moved from `quantconnect_mcp.main` to `quantconnect_mcp.server`. The `quantconnect-mcp` command is unchanged, and `python -m quantconnect_mcp` now works.
 - Failed calls now return MCP errors instead of `{"status": "error"}` payloads, and successful calls return the API payload directly.
 - Optimization tools take typed `parameters` (`name`, `min`, `max`, `step`), a `target`, and a `target_to`.
+- `create_live_algorithm` takes one `brokerage` object in place of `brokerage_id` and `brokerage_config`, `update_file_name` takes `name` and `new_name`, and `update_project_collaborator` requires both `write` and `live_control`.
+- New tools: the Object Store, the LEAN coding help set, `read_backtest_report`, `read_lean_versions`, `create_live_command`, and `broadcast_live_command`.
+- The install is much smaller: pandas, numpy, scipy, scikit-learn, matplotlib, and the other unused scientific packages are gone. Runtime dependencies are fastmcp, httpx2, pydantic, and pydantic-settings.
 - The analytics features previously described in this README (PCA, cointegration, universe screening, portfolio optimization) were never implemented and are no longer advertised.
 
 ## ◈ Development
@@ -136,7 +180,10 @@ uv sync
 uv run pytest            # tool, client, server, and OpenAPI contract tests
 uv run ruff check && uv run ruff format --check
 uv run mypy              # strict
+uv run pre-commit install   # optional: run ruff and mypy on commit
 ```
+
+CI runs the same checks on Python 3.12 and 3.13.
 
 The layout is small on purpose:
 
@@ -149,6 +196,8 @@ quantconnect_mcp/
 ```
 
 To add a tool, write an async function in the matching `tools/` module, decorate it with `@tool(annotations=...)`, take `qc: QuantConnectClient = CLIENT`, add it to that module's `TOOLS`, and add a row to `tests/cases.py`. The contract test checks the payload against `tests/fixtures/quantconnect-openapi.yaml`, which is vendored from [QuantConnect/Documentation](https://github.com/QuantConnect/Documentation).
+
+To release, run `uv run release.py`: it bumps the version in `pyproject.toml`, `manifest.json`, and `uv.lock`, tags, pushes, and drafts a GitHub release. Publishing that draft triggers the workflow that uploads to PyPI through trusted publishing.
 
 ## ◈ License
 
